@@ -1,0 +1,1 @@
+from ._neat3p import GenomeConfig, DefaultNodeGene

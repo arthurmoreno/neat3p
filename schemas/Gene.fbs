@@ -1,0 +1,7 @@
+namespace Neat3P;
+
+
+table Gene {
+  key:int;
+  gene_data: [ubyte];
+}

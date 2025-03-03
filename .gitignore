@@ -169,3 +169,9 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# ### Neat3P
+
+_skbuild
+libs/nanobind
+libs/flatbuffers
