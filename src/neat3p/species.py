@@ -1,4 +1,5 @@
 """Divides the population into species based on genomic distances."""
+
 from itertools import count
 
 from .config import ConfigParameter, DefaultClassConfig
@@ -48,7 +49,7 @@ class GenomeDistanceCache(object):
 
 
 class DefaultSpeciesSet(DefaultClassConfig):
-    """ Encapsulates the default speciation scheme. """
+    """Encapsulates the default speciation scheme."""
 
     def __init__(self, config, reporters):
         # pylint: disable=super-init-not-called
@@ -60,8 +61,7 @@ class DefaultSpeciesSet(DefaultClassConfig):
 
     @classmethod
     def parse_config(cls, param_dict):
-        return DefaultClassConfig(param_dict,
-                                  [ConfigParameter('compatibility_threshold', float)])
+        return DefaultClassConfig(param_dict, [ConfigParameter("compatibility_threshold", float)])
 
     def speciate(self, config, population, generation):
         """
@@ -138,8 +138,7 @@ class DefaultSpeciesSet(DefaultClassConfig):
         if len(population) > 1:
             gdmean = mean(distances.distances.values())
             gdstdev = stdev(distances.distances.values())
-            self.reporters.info(
-                'Mean genetic distance {0:.3f}, standard deviation {1:.3f}'.format(gdmean, gdstdev))
+            self.reporters.info("Mean genetic distance {0:.3f}, standard deviation {1:.3f}".format(gdmean, gdstdev))
 
     def get_species_id(self, individual_id):
         return self.genome_to_species[individual_id]

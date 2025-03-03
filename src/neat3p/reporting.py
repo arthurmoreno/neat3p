@@ -96,14 +96,14 @@ class StdOutReporter(BaseReporter):
 
     def start_generation(self, generation):
         self.generation = generation
-        print('\n ****** Running generation {0} ****** \n'.format(generation))
+        print("\n ****** Running generation {0} ****** \n".format(generation))
         self.generation_start_time = time.time()
 
     def end_generation(self, config, population, species_set):
         ng = len(population)
         ns = len(species_set.species)
         if self.show_species_detail:
-            print('Population of {0:d} members in {1:d} species:'.format(ng, ns))
+            print("Population of {0:d} members in {1:d} species:".format(ng, ns))
             print("   ID   age  size   fitness   adj fit  stag")
             print("  ====  ===  ====  =========  =======  ====")
             for sid in sorted(species_set.species):
@@ -115,13 +115,13 @@ class StdOutReporter(BaseReporter):
                 st = self.generation - s.last_improved
                 print(f"  {sid:>4}  {a:>3}  {n:>4}  {f:>9}  {af:>7}  {st:>4}")
         else:
-            print('Population of {0:d} members in {1:d} species'.format(ng, ns))
+            print("Population of {0:d} members in {1:d} species".format(ng, ns))
 
         elapsed = time.time() - self.generation_start_time
         self.generation_times.append(elapsed)
         self.generation_times = self.generation_times[-10:]
         average = sum(self.generation_times) / len(self.generation_times)
-        print('Total extinctions: {0:d}'.format(self.num_extinctions))
+        print("Total extinctions: {0:d}".format(self.num_extinctions))
         if len(self.generation_times) > 1:
             print("Generation time: {0:.3f} sec ({1:.3f} average)".format(elapsed, average))
         else:
@@ -133,20 +133,23 @@ class StdOutReporter(BaseReporter):
         fit_mean = mean(fitnesses)
         fit_std = stdev(fitnesses)
         best_species_id = species.get_species_id(best_genome.key)
-        print('Population\'s average fitness: {0:3.5f} stdev: {1:3.5f}'.format(fit_mean, fit_std))
+        print("Population's average fitness: {0:3.5f} stdev: {1:3.5f}".format(fit_mean, fit_std))
         print(
-            'Best fitness: {0:3.5f} - size: {1!r} - species {2} - id {3}'.format(best_genome.fitness,
-                                                                                 best_genome.size(),
-                                                                                 best_species_id,
-                                                                                 best_genome.key))
+            "Best fitness: {0:3.5f} - size: {1!r} - species {2} - id {3}".format(
+                best_genome.fitness, best_genome.size(), best_species_id, best_genome.key
+            )
+        )
 
     def complete_extinction(self):
         self.num_extinctions += 1
-        print('All species extinct.')
+        print("All species extinct.")
 
     def found_solution(self, config, generation, best):
-        print('\nBest individual in generation {0} meets fitness threshold - complexity: {1!r}'.format(
-            self.generation, best.size()))
+        print(
+            "\nBest individual in generation {0} meets fitness threshold - complexity: {1!r}".format(
+                self.generation, best.size()
+            )
+        )
 
     def species_stagnant(self, sid, species):
         if self.show_species_detail:

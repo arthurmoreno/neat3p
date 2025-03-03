@@ -6,13 +6,17 @@ import neat3p
 
 class PopulationTests(unittest.TestCase):
     def test_valid_fitness_criterion(self):
-        for c in ('max', 'min', 'mean'):
+        for c in ("max", "min", "mean"):
             # Load configuration.
             local_dir = os.path.dirname(__file__)
-            config_path = os.path.join(local_dir, 'test_configuration')
-            config = neat3p.Config(neat3p.DefaultGenome, neat3p.DefaultReproduction,
-                                 neat3p.DefaultSpeciesSet, neat3p.DefaultStagnation,
-                                 config_path)
+            config_path = os.path.join(local_dir, "test_configuration")
+            config = neat3p.Config(
+                neat3p.DefaultGenome,
+                neat3p.DefaultReproduction,
+                neat3p.DefaultSpeciesSet,
+                neat3p.DefaultStagnation,
+                config_path,
+            )
             config.fitness_criterion = c
 
             p = neat3p.Population(config)
@@ -26,11 +30,15 @@ class PopulationTests(unittest.TestCase):
     def test_invalid_fitness_criterion(self):
         # Load configuration.
         local_dir = os.path.dirname(__file__)
-        config_path = os.path.join(local_dir, 'test_configuration')
-        config = neat3p.Config(neat3p.DefaultGenome, neat3p.DefaultReproduction,
-                             neat3p.DefaultSpeciesSet, neat3p.DefaultStagnation,
-                             config_path)
-        config.fitness_criterion = 'szechaun sauce'
+        config_path = os.path.join(local_dir, "test_configuration")
+        config = neat3p.Config(
+            neat3p.DefaultGenome,
+            neat3p.DefaultReproduction,
+            neat3p.DefaultSpeciesSet,
+            neat3p.DefaultStagnation,
+            config_path,
+        )
+        config.fitness_criterion = "szechaun sauce"
 
         with self.assertRaises(Exception):
             p = neat3p.Population(config)
@@ -122,5 +130,5 @@ class PopulationTests(unittest.TestCase):
 #     # assert id(pop.statistics.generation_statistics) != id(pop2.statistics.generation_statistics)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pass

@@ -1,8 +1,8 @@
 import neat3p
 
-
 # TODO: These tests are just smoke tests to make sure nothing has become badly broken.  Expand
 # to include more detailed tests of actual functionality.
+
 
 class NotAlmostEqualException(Exception):
     pass
@@ -19,10 +19,20 @@ def assert_almost_equal(a, b):
 def test_softmax():
     """Test the neat.math_utils.softmax function."""
     # Test data - below is from Wikipedia Softmax_function page.
-    test_data = [([1.0, 2.0, 3.0, 4.0, 1.0, 2.0, 3.0], [0.02364054302159139, 0.06426165851049616,
-                                                        0.17468129859572226, 0.47483299974438037,
-                                                        0.02364054302159139, 0.06426165851049616,
-                                                        0.17468129859572226])]
+    test_data = [
+        (
+            [1.0, 2.0, 3.0, 4.0, 1.0, 2.0, 3.0],
+            [
+                0.02364054302159139,
+                0.06426165851049616,
+                0.17468129859572226,
+                0.47483299974438037,
+                0.02364054302159139,
+                0.06426165851049616,
+                0.17468129859572226,
+            ],
+        )
+    ]
 
     for test in test_data:
         results_list = list(neat3p.math_util.softmax(test[0]))
@@ -33,5 +43,5 @@ def test_softmax():
     # print("Softmax for [1, 2, 3, 4, 1, 2, 3] is {!r}".format(softmax_result))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test_softmax()

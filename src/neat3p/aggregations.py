@@ -44,10 +44,7 @@ class InvalidAggregationFunction(TypeError):
 
 
 def validate_aggregation(function):  # TODO: Recognize when need `reduce`
-    if not isinstance(function,
-                      (types.BuiltinFunctionType,
-                       types.FunctionType,
-                       types.LambdaType)):
+    if not isinstance(function, (types.BuiltinFunctionType, types.FunctionType, types.LambdaType)):
         raise InvalidAggregationFunction("A function object is required.")
 
     if not (function.__code__.co_argcount >= 1):
@@ -59,13 +56,13 @@ class AggregationFunctionSet(object):
 
     def __init__(self):
         self.functions = {}
-        self.add('product', product_aggregation)
-        self.add('sum', sum_aggregation)
-        self.add('max', max_aggregation)
-        self.add('min', min_aggregation)
-        self.add('maxabs', maxabs_aggregation)
-        self.add('median', median_aggregation)
-        self.add('mean', mean_aggregation)
+        self.add("product", product_aggregation)
+        self.add("sum", sum_aggregation)
+        self.add("max", max_aggregation)
+        self.add("min", min_aggregation)
+        self.add("maxabs", maxabs_aggregation)
+        self.add("median", median_aggregation)
+        self.add("mean", mean_aggregation)
 
     def add(self, name, function):
         validate_aggregation(function)
@@ -79,8 +76,7 @@ class AggregationFunctionSet(object):
         return f
 
     def __getitem__(self, index):
-        warnings.warn("Use get, not indexing ([{!r}]), for aggregation functions".format(index),
-                      DeprecationWarning)
+        warnings.warn("Use get, not indexing ([{!r}]), for aggregation functions".format(index), DeprecationWarning)
         return self.get(index)
 
     def is_valid(self, name):

@@ -17,20 +17,28 @@ class TestCreateNew(unittest.TestCase):
         current working directory.
         """
         local_dir = os.path.dirname(__file__)
-        config_path = os.path.join(local_dir, 'test_configuration')
-        self.config = neat3p.Config(neat3p.DefaultGenome, neat3p.DefaultReproduction,
-                                  neat3p.DefaultSpeciesSet, neat3p.DefaultStagnation,
-                                  config_path)
-        config2_path = os.path.join(local_dir, 'test_configuration2')
-        self.config2 = neat3p.Config(neat3p.DefaultGenome, neat3p.DefaultReproduction,
-                                   neat3p.DefaultSpeciesSet, neat3p.DefaultStagnation,
-                                   config2_path)
+        config_path = os.path.join(local_dir, "test_configuration")
+        self.config = neat3p.Config(
+            neat3p.DefaultGenome,
+            neat3p.DefaultReproduction,
+            neat3p.DefaultSpeciesSet,
+            neat3p.DefaultStagnation,
+            config_path,
+        )
+        config2_path = os.path.join(local_dir, "test_configuration2")
+        self.config2 = neat3p.Config(
+            neat3p.DefaultGenome,
+            neat3p.DefaultReproduction,
+            neat3p.DefaultSpeciesSet,
+            neat3p.DefaultStagnation,
+            config2_path,
+        )
 
     def test_unconnected_no_hidden(self):
         """Unconnected network with only input and output nodes."""
         gid = 42
         config = self.config.genome_config
-        config.initial_connection = 'unconnected'
+        config.initial_connection = "unconnected"
         config.num_hidden = 0
 
         g = neat3p.DefaultGenome(gid)
@@ -39,13 +47,13 @@ class TestCreateNew(unittest.TestCase):
 
         print(g)
         self.assertEqual(set(g.nodes), {0})
-        assert (not g.connections)
+        assert not g.connections
 
     def test_unconnected_hidden(self):
         """Unconnected network with hidden nodes."""
         gid = 42
         config = self.config.genome_config
-        config.initial_connection = 'unconnected'
+        config.initial_connection = "unconnected"
         config.num_hidden = 2
 
         g = neat3p.DefaultGenome(gid)
@@ -54,7 +62,7 @@ class TestCreateNew(unittest.TestCase):
 
         print(g)
         self.assertEqual(set(g.nodes), {0, 1, 2})
-        assert (not g.connections)
+        assert not g.connections
 
     def test_fs_neat_no_hidden(self):
         """
@@ -63,7 +71,7 @@ class TestCreateNew(unittest.TestCase):
         """
         gid = 42
         config = self.config.genome_config
-        config.initial_connection = 'fs_neat'
+        config.initial_connection = "fs_neat"
         config.num_hidden = 0
 
         g = neat3p.DefaultGenome(gid)
@@ -81,7 +89,7 @@ class TestCreateNew(unittest.TestCase):
         """
         gid = 42
         config = self.config.genome_config
-        config.initial_connection = 'fs_neat'
+        config.initial_connection = "fs_neat"
         config.num_hidden = 2
 
         g = neat3p.DefaultGenome(gid)
@@ -97,7 +105,7 @@ class TestCreateNew(unittest.TestCase):
         """fs_neat not connecting hidden nodes."""
         gid = 42
         config = self.config.genome_config
-        config.initial_connection = 'fs_neat_nohidden'
+        config.initial_connection = "fs_neat_nohidden"
         config.num_hidden = 2
 
         g = neat3p.DefaultGenome(gid)
@@ -112,7 +120,7 @@ class TestCreateNew(unittest.TestCase):
         """fs_neat with connecting hidden nodes."""
         gid = 42
         config = self.config.genome_config
-        config.initial_connection = 'fs_neat_hidden'
+        config.initial_connection = "fs_neat_hidden"
         config.num_hidden = 2
 
         g = neat3p.DefaultGenome(gid)
@@ -130,7 +138,7 @@ class TestCreateNew(unittest.TestCase):
         """
         gid = 42
         config = self.config.genome_config
-        config.initial_connection = 'full'
+        config.initial_connection = "full"
         config.num_hidden = 0
 
         g = neat3p.DefaultGenome(gid)
@@ -143,7 +151,7 @@ class TestCreateNew(unittest.TestCase):
 
         # Check that each input is connected to the output node
         for i in config.input_keys:
-            assert ((i, 0) in g.connections)
+            assert (i, 0) in g.connections
 
     def test_fully_connected_hidden_nodirect_old(self):
         """
@@ -152,7 +160,7 @@ class TestCreateNew(unittest.TestCase):
         """
         gid = 42
         config = self.config.genome_config
-        config.initial_connection = 'full'
+        config.initial_connection = "full"
         config.num_hidden = 2
 
         g = neat3p.DefaultGenome(gid)
@@ -167,21 +175,21 @@ class TestCreateNew(unittest.TestCase):
         # Check that each input is connected to each hidden node.
         for i in config.input_keys:
             for h in (1, 2):
-                assert ((i, h) in g.connections)
+                assert (i, h) in g.connections
 
         # Check that each hidden node is connected to the output.
         for h in (1, 2):
-            assert ((h, 0) in g.connections)
+            assert (h, 0) in g.connections
 
         # Check that inputs are not directly connected to the output
         for i in config.input_keys:
-            assert ((i, 0) not in g.connections)
+            assert (i, 0) not in g.connections
 
     def test_fully_connected_hidden_nodirect(self):
         """full with no direct input-output connections, only via hidden nodes."""
         gid = 42
         config = self.config.genome_config
-        config.initial_connection = 'full_nodirect'
+        config.initial_connection = "full_nodirect"
         config.num_hidden = 2
 
         g = neat3p.DefaultGenome(gid)
@@ -195,21 +203,21 @@ class TestCreateNew(unittest.TestCase):
         # Check that each input is connected to each hidden node.
         for i in config.input_keys:
             for h in (1, 2):
-                assert ((i, h) in g.connections)
+                assert (i, h) in g.connections
 
         # Check that each hidden node is connected to the output.
         for h in (1, 2):
-            assert ((h, 0) in g.connections)
+            assert (h, 0) in g.connections
 
         # Check that inputs are not directly connected to the output
         for i in config.input_keys:
-            assert ((i, 0) not in g.connections)
+            assert (i, 0) not in g.connections
 
     def test_fully_connected_hidden_direct(self):
         """full with direct input-output connections (and also via hidden hodes)."""
         gid = 42
         config = self.config.genome_config
-        config.initial_connection = 'full_direct'
+        config.initial_connection = "full_direct"
         config.num_hidden = 2
 
         g = neat3p.DefaultGenome(gid)
@@ -223,15 +231,15 @@ class TestCreateNew(unittest.TestCase):
         # Check that each input is connected to each hidden node.
         for i in config.input_keys:
             for h in (1, 2):
-                assert ((i, h) in g.connections)
+                assert (i, h) in g.connections
 
         # Check that each hidden node is connected to the output.
         for h in (1, 2):
-            assert ((h, 0) in g.connections)
+            assert (h, 0) in g.connections
 
         # Check that inputs are directly connected to the output
         for i in config.input_keys:
-            assert ((i, 0) in g.connections)
+            assert (i, 0) in g.connections
 
     def test_partially_connected_no_hidden(self):
         """
@@ -240,7 +248,7 @@ class TestCreateNew(unittest.TestCase):
         """
         gid = 42
         config = self.config2.genome_config
-        config.initial_connection = 'partial'
+        config.initial_connection = "partial"
         config.connection_fraction = 0.5
         config.num_hidden = 0
 
@@ -259,7 +267,7 @@ class TestCreateNew(unittest.TestCase):
         """
         gid = 42
         config = self.config2.genome_config
-        config.initial_connection = 'partial'
+        config.initial_connection = "partial"
         config.connection_fraction = 0.5
         config.num_hidden = 2
 
@@ -276,7 +284,7 @@ class TestCreateNew(unittest.TestCase):
         """partial with no direct input-output connections, only via hidden nodes."""
         gid = 42
         config = self.config.genome_config
-        config.initial_connection = 'partial_nodirect'
+        config.initial_connection = "partial_nodirect"
         config.connection_fraction = 0.5
         config.num_hidden = 2
 
@@ -295,7 +303,7 @@ class TestCreateNew(unittest.TestCase):
         """
         gid = 42
         config = self.config.genome_config
-        config.initial_connection = 'partial_direct'
+        config.initial_connection = "partial_direct"
         config.connection_fraction = 0.5
         config.num_hidden = 2
 
@@ -318,15 +326,19 @@ class TestPruning(unittest.TestCase):
         current working directory.
         """
         local_dir = os.path.dirname(__file__)
-        config_path = os.path.join(local_dir, 'test_configuration')
-        self.config = neat3p.Config(neat3p.DefaultGenome, neat3p.DefaultReproduction,
-                                  neat3p.DefaultSpeciesSet, neat3p.DefaultStagnation,
-                                  config_path)
+        config_path = os.path.join(local_dir, "test_configuration")
+        self.config = neat3p.Config(
+            neat3p.DefaultGenome,
+            neat3p.DefaultReproduction,
+            neat3p.DefaultSpeciesSet,
+            neat3p.DefaultStagnation,
+            config_path,
+        )
 
     def test_empty_network(self):
         gid = 42
         config = self.config.genome_config
-        config.initial_connection = 'unconnected'
+        config.initial_connection = "unconnected"
         config.num_hidden = 0
 
         g = neat3p.DefaultGenome(gid)
@@ -335,14 +347,14 @@ class TestPruning(unittest.TestCase):
         g_pruned = g.get_pruned_copy(config)
 
         self.assertEqual(set(g.nodes.keys()), {0})
-        assert (not g.connections)
+        assert not g.connections
         self.assertEqual(set(g.nodes.keys()), set(g_pruned.nodes.keys()))
         self.assertEqual(set(g.connections.keys()), set(g_pruned.connections.keys()))
 
     def test_nothing_to_prune(self):
         gid = 42
         config = self.config.genome_config
-        config.initial_connection = 'unconnected'
+        config.initial_connection = "unconnected"
         config.num_hidden = 0
 
         g = neat3p.DefaultGenome(gid)
@@ -358,7 +370,7 @@ class TestPruning(unittest.TestCase):
     def test_unused_node(self):
         gid = 42
         config = self.config.genome_config
-        config.initial_connection = 'unconnected'
+        config.initial_connection = "unconnected"
         config.num_hidden = 0
 
         g = neat3p.DefaultGenome(gid)
@@ -381,5 +393,5 @@ class TestPruning(unittest.TestCase):
         self.assertEqual(set(g_pruned.connections.keys()), {(-1, 0), (-2, 0)})
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
