@@ -25,7 +25,7 @@ def sin_activation(z):
 
 def gauss_activation(z):
     z = max(-3.4, min(3.4, z))
-    return math.exp(-5.0 * z ** 2)
+    return math.exp(-5.0 * z**2)
 
 
 def relu_activation(z):
@@ -88,11 +88,11 @@ def hat_activation(z):
 
 
 def square_activation(z):
-    return z ** 2
+    return z**2
 
 
 def cube_activation(z):
-    return z ** 3
+    return z**3
 
 
 class InvalidActivationFunction(TypeError):
@@ -100,10 +100,7 @@ class InvalidActivationFunction(TypeError):
 
 
 def validate_activation(function):
-    if not isinstance(function,
-                      (types.BuiltinFunctionType,
-                       types.FunctionType,
-                       types.LambdaType)):
+    if not isinstance(function, (types.BuiltinFunctionType, types.FunctionType, types.LambdaType)):
         raise InvalidActivationFunction("A function object is required.")
 
     if function.__code__.co_argcount != 1:  # avoid deprecated use of `inspect`
@@ -118,24 +115,24 @@ class ActivationFunctionSet(object):
 
     def __init__(self):
         self.functions = {}
-        self.add('sigmoid', sigmoid_activation)
-        self.add('tanh', tanh_activation)
-        self.add('sin', sin_activation)
-        self.add('gauss', gauss_activation)
-        self.add('relu', relu_activation)
-        self.add('elu', elu_activation)
-        self.add('lelu', lelu_activation)
-        self.add('selu', selu_activation)
-        self.add('softplus', softplus_activation)
-        self.add('identity', identity_activation)
-        self.add('clamped', clamped_activation)
-        self.add('inv', inv_activation)
-        self.add('log', log_activation)
-        self.add('exp', exp_activation)
-        self.add('abs', abs_activation)
-        self.add('hat', hat_activation)
-        self.add('square', square_activation)
-        self.add('cube', cube_activation)
+        self.add("sigmoid", sigmoid_activation)
+        self.add("tanh", tanh_activation)
+        self.add("sin", sin_activation)
+        self.add("gauss", gauss_activation)
+        self.add("relu", relu_activation)
+        self.add("elu", elu_activation)
+        self.add("lelu", lelu_activation)
+        self.add("selu", selu_activation)
+        self.add("softplus", softplus_activation)
+        self.add("identity", identity_activation)
+        self.add("clamped", clamped_activation)
+        self.add("inv", inv_activation)
+        self.add("log", log_activation)
+        self.add("exp", exp_activation)
+        self.add("abs", abs_activation)
+        self.add("hat", hat_activation)
+        self.add("square", square_activation)
+        self.add("cube", cube_activation)
 
     def add(self, name, function):
         validate_activation(function)

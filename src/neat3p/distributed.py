@@ -90,6 +90,7 @@ class ModeError(RuntimeError):
     called without being in the mode - either a primary-specific method
     called by a secondary node or a secondary-specific method called by a primary node.
     """
+
     pass
 
 
@@ -98,18 +99,21 @@ def host_is_local(hostname, port=22):  # no port specified, just use the ssh por
     Returns True if the hostname points to the localhost, otherwise False.
     """
     hostname = socket.getfqdn(hostname)
-    if hostname in ("localhost", "0.0.0.0", "127.0.0.1", "1.0.0.127.in-addr.arpa",
-                    "1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.ip6.arpa"):
+    if hostname in (
+        "localhost",
+        "0.0.0.0",
+        "127.0.0.1",
+        "1.0.0.127.in-addr.arpa",
+        "1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.ip6.arpa",
+    ):
         return True
     localhost = socket.gethostname()
     if hostname == localhost:
         return True
     localaddrs = socket.getaddrinfo(localhost, port)
     targetaddrs = socket.getaddrinfo(hostname, port)
-    for (ignored_family, ignored_socktype, ignored_proto, ignored_canonname,
-         sockaddr) in localaddrs:
-        for (ignored_rfamily, ignored_rsocktype, ignored_rproto,
-             ignored_rcanonname, rsockaddr) in targetaddrs:
+    for ignored_family, ignored_socktype, ignored_proto, ignored_canonname, sockaddr in localaddrs:
+        for ignored_rfamily, ignored_rsocktype, ignored_rproto, ignored_rcanonname, rsockaddr in targetaddrs:
             if rsockaddr[0] == sockaddr[0]:
                 return True
     return False
@@ -162,6 +166,7 @@ def chunked(data, chunksize):
 
 class _ExtendedManager(object):
     """A class for managing the multiprocessing.managers.SyncManager"""
+
     __safe_for_unpickling__ = True  # this may not be safe for unpickling,
 
     # but this is required by pickle.
@@ -200,7 +205,8 @@ class _ExtendedManager(object):
         """Sets the value for 'secondary_state'."""
         if value not in (_STATE_RUNNING, _STATE_SHUTDOWN, _STATE_FORCED_SHUTDOWN):
             raise ValueError(
-                f"State {value!r} is invalid - needs to be one of _STATE_RUNNING, _STATE_SHUTDOWN, or _STATE_FORCED_SHUTDOWN")
+                f"State {value!r} is invalid - needs to be one of _STATE_RUNNING, _STATE_SHUTDOWN, or _STATE_FORCED_SHUTDOWN"
+            )
 
         if self.manager is None:
             raise RuntimeError("Manager not started")
@@ -225,6 +231,7 @@ class _ExtendedManager(object):
             Please see the documentation of `multiprocessing` for more
             information.
             """
+
             pass
 
         inqueue = queue.Queue()
@@ -313,14 +320,14 @@ class DistributedEvaluator(object):
     """An evaluator working across multiple machines"""
 
     def __init__(
-            self,
-            addr,
-            authkey,
-            eval_function,
-            secondary_chunksize=1,
-            num_workers=None,
-            worker_timeout=60,
-            mode=MODE_AUTO,
+        self,
+        addr,
+        authkey,
+        eval_function,
+        secondary_chunksize=1,
+        num_workers=None,
+        worker_timeout=60,
+        mode=MODE_AUTO,
     ):
         """
         ``addr`` should be a tuple of (hostname, port) pointing to the machine
@@ -355,8 +362,7 @@ class DistributedEvaluator(object):
             try:
                 self.num_workers = max(1, multiprocessing.cpu_count())
             except (RuntimeError, AttributeError):  # pragma: no cover
-                print("multiprocessing.cpu_count() gave an error; assuming 1",
-                      file=sys.stderr)
+                print("multiprocessing.cpu_count() gave an error; assuming 1", file=sys.stderr)
                 self.num_workers = 1
         self.worker_timeout = worker_timeout
         self.mode = _determine_mode(self.addr, mode)
@@ -501,10 +507,11 @@ class DistributedEvaluator(object):
                 except (socket.error, EOFError, IOError, OSError, socket.gaierror, TypeError):
                     break
                 except (managers.RemoteError, multiprocessing.ProcessError) as e:
-                    if ('Empty' in repr(e)) or ('TimeoutError' in repr(e)):
+                    if ("Empty" in repr(e)) or ("TimeoutError" in repr(e)):
                         continue
-                    if (('EOFError' in repr(e)) or ('PipeError' in repr(e)) or
-                            ('AuthenticationError' in repr(e))):  # Second for Python 3.X, Third for 3.6+
+                    if (
+                        ("EOFError" in repr(e)) or ("PipeError" in repr(e)) or ("AuthenticationError" in repr(e))
+                    ):  # Second for Python 3.X, Third for 3.6+
                         break
                     raise
                 if pool is None:
@@ -517,24 +524,19 @@ class DistributedEvaluator(object):
                     jobs = []
                     for genome_id, genome, config in tasks:
                         genome_ids.append(genome_id)
-                        jobs.append(
-                            pool.apply_async(
-                                self.eval_function, (genome, config)
-                            )
-                        )
-                    results = [
-                        job.get(timeout=self.worker_timeout) for job in jobs
-                    ]
+                        jobs.append(pool.apply_async(self.eval_function, (genome, config)))
+                    results = [job.get(timeout=self.worker_timeout) for job in jobs]
                     res = zip(genome_ids, results)
                 try:
                     self.outqueue.put(res)
                 except (socket.error, EOFError, IOError, OSError, socket.gaierror, TypeError):
                     break
                 except (managers.RemoteError, multiprocessing.ProcessError) as e:
-                    if ('Empty' in repr(e)) or ('TimeoutError' in repr(e)):
+                    if ("Empty" in repr(e)) or ("TimeoutError" in repr(e)):
                         continue
-                    if (('EOFError' in repr(e)) or ('PipeError' in repr(e)) or
-                            ('AuthenticationError' in repr(e))):  # Second for Python 3.X, Third for 3.6+
+                    if (
+                        ("EOFError" in repr(e)) or ("PipeError" in repr(e)) or ("AuthenticationError" in repr(e))
+                    ):  # Second for Python 3.X, Third for 3.6+
                         break
                     raise
 

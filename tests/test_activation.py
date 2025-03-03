@@ -3,9 +3,9 @@ import os
 import neat3p
 from neat3p import activations
 
-
 # TODO: These are just smoke tests to make sure nothing has become badly broken.  Expand
 # to include more detailed tests of actual functionality.
+
 
 class NotAlmostEqualException(Exception):
     pass
@@ -33,8 +33,7 @@ def test_sin():
 
 def test_gauss():
     assert_almost_equal(activations.gauss_activation(0.0), 1.0)
-    assert_almost_equal(activations.gauss_activation(-1.0),
-                        activations.gauss_activation(1.0))
+    assert_almost_equal(activations.gauss_activation(-1.0), activations.gauss_activation(1.0))
 
 
 def test_relu():
@@ -107,19 +106,23 @@ def test_cube():
 
 
 def plus_activation(x):
-    """ Not useful - just a check. """
+    """Not useful - just a check."""
     return abs(x + 1)
 
 
 def test_add_plus():
     local_dir = os.path.dirname(__file__)
-    config_path = os.path.join(local_dir, 'test_configuration')
-    config = neat3p.Config(neat3p.DefaultGenome, neat3p.DefaultReproduction,
-                         neat3p.DefaultSpeciesSet, neat3p.DefaultStagnation,
-                         config_path)
-    config.genome_config.add_activation('plus', plus_activation)
-    assert config.genome_config.activation_defs.get('plus') is not None
-    assert config.genome_config.activation_defs.is_valid('plus')
+    config_path = os.path.join(local_dir, "test_configuration")
+    config = neat3p.Config(
+        neat3p.DefaultGenome,
+        neat3p.DefaultReproduction,
+        neat3p.DefaultSpeciesSet,
+        neat3p.DefaultStagnation,
+        config_path,
+    )
+    config.genome_config.add_activation("plus", plus_activation)
+    assert config.genome_config.activation_defs.get("plus") is not None
+    assert config.genome_config.activation_defs.is_valid("plus")
 
 
 def dud_function():
@@ -128,54 +131,58 @@ def dud_function():
 
 def test_function_set():
     s = activations.ActivationFunctionSet()
-    assert s.get('sigmoid') is not None
-    assert s.get('tanh') is not None
-    assert s.get('sin') is not None
-    assert s.get('gauss') is not None
-    assert s.get('relu') is not None
-    assert s.get('elu') is not None
-    assert s.get('lelu') is not None
-    assert s.get('selu') is not None
-    assert s.get('identity') is not None
-    assert s.get('clamped') is not None
-    assert s.get('inv') is not None
-    assert s.get('log') is not None
-    assert s.get('exp') is not None
-    assert s.get('abs') is not None
-    assert s.get('hat') is not None
-    assert s.get('square') is not None
-    assert s.get('cube') is not None
+    assert s.get("sigmoid") is not None
+    assert s.get("tanh") is not None
+    assert s.get("sin") is not None
+    assert s.get("gauss") is not None
+    assert s.get("relu") is not None
+    assert s.get("elu") is not None
+    assert s.get("lelu") is not None
+    assert s.get("selu") is not None
+    assert s.get("identity") is not None
+    assert s.get("clamped") is not None
+    assert s.get("inv") is not None
+    assert s.get("log") is not None
+    assert s.get("exp") is not None
+    assert s.get("abs") is not None
+    assert s.get("hat") is not None
+    assert s.get("square") is not None
+    assert s.get("cube") is not None
 
-    assert s.is_valid('sigmoid')
-    assert s.is_valid('tanh')
-    assert s.is_valid('sin')
-    assert s.is_valid('gauss')
-    assert s.is_valid('relu')
-    assert s.is_valid('elu')
-    assert s.is_valid('lelu')
-    assert s.is_valid('selu')
-    assert s.is_valid('identity')
-    assert s.is_valid('clamped')
-    assert s.is_valid('inv')
-    assert s.is_valid('log')
-    assert s.is_valid('exp')
-    assert s.is_valid('abs')
-    assert s.is_valid('hat')
-    assert s.is_valid('square')
-    assert s.is_valid('cube')
+    assert s.is_valid("sigmoid")
+    assert s.is_valid("tanh")
+    assert s.is_valid("sin")
+    assert s.is_valid("gauss")
+    assert s.is_valid("relu")
+    assert s.is_valid("elu")
+    assert s.is_valid("lelu")
+    assert s.is_valid("selu")
+    assert s.is_valid("identity")
+    assert s.is_valid("clamped")
+    assert s.is_valid("inv")
+    assert s.is_valid("log")
+    assert s.is_valid("exp")
+    assert s.is_valid("abs")
+    assert s.is_valid("hat")
+    assert s.is_valid("square")
+    assert s.is_valid("cube")
 
-    assert not s.is_valid('foo')
+    assert not s.is_valid("foo")
 
 
 def test_bad_add1():
     local_dir = os.path.dirname(__file__)
-    config_path = os.path.join(local_dir, 'test_configuration')
-    config = neat3p.Config(neat3p.DefaultGenome, neat3p.DefaultReproduction,
-                         neat3p.DefaultSpeciesSet, neat3p.DefaultStagnation,
-                         config_path)
+    config_path = os.path.join(local_dir, "test_configuration")
+    config = neat3p.Config(
+        neat3p.DefaultGenome,
+        neat3p.DefaultReproduction,
+        neat3p.DefaultSpeciesSet,
+        neat3p.DefaultStagnation,
+        config_path,
+    )
 
     try:
-        config.genome_config.add_activation('1.0', 1.0)
+        config.genome_config.add_activation("1.0", 1.0)
     except TypeError:
         pass
     else:
@@ -184,20 +191,24 @@ def test_bad_add1():
 
 def test_bad_add2():
     local_dir = os.path.dirname(__file__)
-    config_path = os.path.join(local_dir, 'test_configuration')
-    config = neat3p.Config(neat3p.DefaultGenome, neat3p.DefaultReproduction,
-                         neat3p.DefaultSpeciesSet, neat3p.DefaultStagnation,
-                         config_path)
+    config_path = os.path.join(local_dir, "test_configuration")
+    config = neat3p.Config(
+        neat3p.DefaultGenome,
+        neat3p.DefaultReproduction,
+        neat3p.DefaultSpeciesSet,
+        neat3p.DefaultStagnation,
+        config_path,
+    )
 
     try:
-        config.genome_config.add_activation('dud_function', dud_function)
+        config.genome_config.add_activation("dud_function", dud_function)
     except TypeError:
         pass
     else:
         raise Exception("Should have had a TypeError/derived for dud_function")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test_sigmoid()
     test_tanh()
     test_sin()

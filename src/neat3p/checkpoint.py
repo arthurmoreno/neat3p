@@ -15,8 +15,7 @@ class Checkpointer(BaseReporter):
     to save and restore populations (and other aspects of the simulation state).
     """
 
-    def __init__(self, generation_interval=100, time_interval_seconds=300,
-                 filename_prefix='neat-checkpoint-'):
+    def __init__(self, generation_interval=100, time_interval_seconds=300, filename_prefix="neat-checkpoint-"):
         """
         Saves the current state (at the end of a generation) every ``generation_interval`` generations or
         ``time_interval_seconds``, whichever happens first.
@@ -57,11 +56,11 @@ class Checkpointer(BaseReporter):
             self.last_time_checkpoint = time.time()
 
     def save_checkpoint(self, config, population, species_set, generation):
-        """ Save the current simulation state. """
-        filename = '{0}{1}'.format(self.filename_prefix, generation)
+        """Save the current simulation state."""
+        filename = "{0}{1}".format(self.filename_prefix, generation)
         print("Saving checkpoint to {0}".format(filename))
 
-        with gzip.open(filename, 'w', compresslevel=5) as f:
+        with gzip.open(filename, "w", compresslevel=5) as f:
             data = (generation, config, population, species_set, random.getstate())
             pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
 

@@ -10,7 +10,6 @@ from itertools import count
 from .config import ConfigParameter, DefaultClassConfig
 from .math_util import mean
 
-
 # TODO: Provide some sort of optional cross-species performance criteria, which
 # are then used to control stagnation and possibly the mutation rate
 # configuration. This scheme should be adaptive so that species do not evolve
@@ -25,10 +24,14 @@ class DefaultReproduction(DefaultClassConfig):
 
     @classmethod
     def parse_config(cls, param_dict):
-        return DefaultClassConfig(param_dict,
-                                  [ConfigParameter('elitism', int, 0),
-                                   ConfigParameter('survival_threshold', float, 0.2),
-                                   ConfigParameter('min_species_size', int, 1)])
+        return DefaultClassConfig(
+            param_dict,
+            [
+                ConfigParameter("elitism", int, 0),
+                ConfigParameter("survival_threshold", float, 0.2),
+                ConfigParameter("min_species_size", int, 1),
+            ],
+        )
 
     def __init__(self, config, reporters, stagnation):
         # pylint: disable=super-init-not-called
@@ -134,8 +137,7 @@ class DefaultReproduction(DefaultClassConfig):
         # self.reproduction_config.elitism)? That would probably produce more accurate tracking
         # of population sizes and relative fitnesses... doing. TODO: document.
         min_species_size = max(min_species_size, self.reproduction_config.elitism)
-        spawn_amounts = self.compute_spawn(adjusted_fitnesses, previous_sizes,
-                                           pop_size, min_species_size)
+        spawn_amounts = self.compute_spawn(adjusted_fitnesses, previous_sizes, pop_size, min_species_size)
 
         new_population = {}
         species.species = {}
@@ -155,7 +157,7 @@ class DefaultReproduction(DefaultClassConfig):
 
             # Transfer elites to new generation.
             if self.reproduction_config.elitism > 0:
-                for i, m in old_members[:self.reproduction_config.elitism]:
+                for i, m in old_members[: self.reproduction_config.elitism]:
                     new_population[i] = m
                     spawn -= 1
 
@@ -163,8 +165,7 @@ class DefaultReproduction(DefaultClassConfig):
                 continue
 
             # Only use the survival threshold fraction to use as parents for the next generation.
-            repro_cutoff = int(math.ceil(self.reproduction_config.survival_threshold *
-                                         len(old_members)))
+            repro_cutoff = int(math.ceil(self.reproduction_config.survival_threshold * len(old_members)))
             # Use at least two parents no matter what the threshold fraction result is.
             repro_cutoff = max(repro_cutoff, 2)
             old_members = old_members[:repro_cutoff]

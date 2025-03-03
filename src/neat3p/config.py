@@ -41,7 +41,7 @@ class ConfigParameter(object):
         value = config_dict.get(self.name)
         if value is None:
             if self.default is None:
-                raise RuntimeError('Missing configuration item: ' + self.name)
+                raise RuntimeError("Missing configuration item: " + self.name)
             else:
                 warnings.warn(f"Using default {self.default!r} for '{self.name!s}'", DeprecationWarning)
                 if (str != self.value_type) and isinstance(self.default, self.value_type):
@@ -67,7 +67,8 @@ class ConfigParameter(object):
                 return value.split(" ")
         except Exception:
             raise RuntimeError(
-                f"Error interpreting config item '{self.name}' with value {value!r} and type {self.value_type}")
+                f"Error interpreting config item '{self.name}' with value {value!r} and type {self.value_type}"
+            )
 
         raise RuntimeError("Unexpected configuration type: " + repr(self.value_type))
 
@@ -85,11 +86,12 @@ def write_pretty_params(f, config, params):
 
     for name in param_names:
         p = params[name]
-        f.write(f'{p.name.ljust(longest_name)} = {p.format(getattr(config, p.name))}\n')
+        f.write(f"{p.name.ljust(longest_name)} = {p.format(getattr(config, p.name))}\n")
 
 
 class UnknownConfigItemError(NameError):
     """Error for unknown configuration option - partially to catch typos."""
+
     pass
 
 
@@ -108,8 +110,7 @@ class DefaultClassConfig(object):
         unknown_list = [x for x in param_dict if x not in param_list_names]
         if unknown_list:
             if len(unknown_list) > 1:
-                raise UnknownConfigItemError("Unknown configuration items:\n" +
-                                             "\n\t".join(unknown_list))
+                raise UnknownConfigItemError("Unknown configuration items:\n" + "\n\t".join(unknown_list))
             raise UnknownConfigItemError(f"Unknown configuration item {unknown_list[0]!s}")
 
     @classmethod
@@ -121,18 +122,22 @@ class DefaultClassConfig(object):
 class Config(object):
     """A container for user-configurable parameters of NEAT."""
 
-    __params = [ConfigParameter('pop_size', int),
-                ConfigParameter('fitness_criterion', str),
-                ConfigParameter('fitness_threshold', float),
-                ConfigParameter('reset_on_extinction', bool),
-                ConfigParameter('no_fitness_termination', bool, False)]
+    __params = [
+        ConfigParameter("pop_size", int),
+        ConfigParameter("fitness_criterion", str),
+        ConfigParameter("fitness_threshold", float),
+        ConfigParameter("reset_on_extinction", bool),
+        ConfigParameter("no_fitness_termination", bool, False),
+    ]
 
-    def __init__(self, genome_type, reproduction_type, species_set_type, stagnation_type, filename, config_information=None):
+    def __init__(
+        self, genome_type, reproduction_type, species_set_type, stagnation_type, filename, config_information=None
+    ):
         # Check that the provided types have the required methods.
-        assert hasattr(genome_type, 'parse_config')
-        assert hasattr(reproduction_type, 'parse_config')
-        assert hasattr(species_set_type, 'parse_config')
-        assert hasattr(stagnation_type, 'parse_config')
+        assert hasattr(genome_type, "parse_config")
+        assert hasattr(reproduction_type, "parse_config")
+        assert hasattr(species_set_type, "parse_config")
+        assert hasattr(stagnation_type, "parse_config")
 
         self.genome_type = genome_type
         self.reproduction_type = reproduction_type
@@ -141,33 +146,34 @@ class Config(object):
         self.config_information = config_information
 
         if not os.path.isfile(filename):
-            raise Exception('No such config file: ' + os.path.abspath(filename))
+            raise Exception("No such config file: " + os.path.abspath(filename))
 
         parameters = ConfigParser()
         with open(filename) as f:
             parameters.read_file(f)
 
         # NEAT configuration
-        if not parameters.has_section('NEAT'):
+        if not parameters.has_section("NEAT"):
             raise RuntimeError("'NEAT' section not found in NEAT configuration file.")
 
         param_list_names = []
         for p in self.__params:
             if p.default is None:
-                setattr(self, p.name, p.parse('NEAT', parameters))
+                setattr(self, p.name, p.parse("NEAT", parameters))
             else:
                 try:
-                    setattr(self, p.name, p.parse('NEAT', parameters))
+                    setattr(self, p.name, p.parse("NEAT", parameters))
                 except Exception:
                     setattr(self, p.name, p.default)
-                    warnings.warn(f"Using default {p.default!r} for '{p.name!s}'",
-                                  DeprecationWarning)
+                    warnings.warn(f"Using default {p.default!r} for '{p.name!s}'", DeprecationWarning)
             param_list_names.append(p.name)
-        param_dict = dict(parameters.items('NEAT'))
+        param_dict = dict(parameters.items("NEAT"))
         unknown_list = [x for x in param_dict if x not in param_list_names]
         if unknown_list:
             if len(unknown_list) > 1:
-                raise UnknownConfigItemError("Unknown (section 'NEAT') configuration items:\n" + "\n\t".join(unknown_list))
+                raise UnknownConfigItemError(
+                    "Unknown (section 'NEAT') configuration items:\n" + "\n\t".join(unknown_list)
+                )
             raise UnknownConfigItemError(f"Unknown (section 'NEAT') configuration item {unknown_list[0]!s}")
 
         # Parse type sections.
@@ -184,20 +190,20 @@ class Config(object):
         self.reproduction_config = reproduction_type.parse_config(reproduction_dict)
 
     def save(self, filename):
-        with open(filename, 'w') as f:
-            f.write('# The `NEAT` section specifies parameters particular to the NEAT algorithm\n')
-            f.write('# or the experiment itself.  This is the only required section.\n')
-            f.write('[NEAT]\n')
+        with open(filename, "w") as f:
+            f.write("# The `NEAT` section specifies parameters particular to the NEAT algorithm\n")
+            f.write("# or the experiment itself.  This is the only required section.\n")
+            f.write("[NEAT]\n")
             write_pretty_params(f, self, self.__params)
 
-            f.write(f'\n[{self.genome_type.__name__}]\n')
+            f.write(f"\n[{self.genome_type.__name__}]\n")
             self.genome_type.write_config(f, self.genome_config)
 
-            f.write(f'\n[{self.species_set_type.__name__}]\n')
+            f.write(f"\n[{self.species_set_type.__name__}]\n")
             self.species_set_type.write_config(f, self.species_set_config)
 
-            f.write(f'\n[{self.stagnation_type.__name__}]\n')
+            f.write(f"\n[{self.stagnation_type.__name__}]\n")
             self.stagnation_type.write_config(f, self.stagnation_config)
 
-            f.write(f'\n[{self.reproduction_type.__name__}]\n')
+            f.write(f"\n[{self.reproduction_type.__name__}]\n")
             self.reproduction_type.write_config(f, self.reproduction_config)

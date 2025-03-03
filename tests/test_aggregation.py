@@ -3,7 +3,6 @@ import os
 import neat3p
 from neat3p import aggregations
 
-
 # TODO: These tests are just smoke tests to make sure nothing has become badly broken.  Expand
 # to include more detailed tests of actual functionality.
 
@@ -55,20 +54,24 @@ def test_mean():
 
 
 def minabs_aggregation(x):
-    """ Not particularly useful - just a check. """
+    """Not particularly useful - just a check."""
     return min(x, key=abs)
 
 
 def test_add_minabs():
     local_dir = os.path.dirname(__file__)
-    config_path = os.path.join(local_dir, 'test_configuration')
-    config = neat3p.Config(neat3p.DefaultGenome, neat3p.DefaultReproduction,
-                         neat3p.DefaultSpeciesSet, neat3p.DefaultStagnation,
-                         config_path)
-    config.genome_config.add_aggregation('minabs', minabs_aggregation)
-    assert config.genome_config.aggregation_function_defs.get('minabs') is not None
-    assert config.genome_config.aggregation_function_defs['minabs'] is not None
-    assert config.genome_config.aggregation_function_defs.is_valid('minabs')
+    config_path = os.path.join(local_dir, "test_configuration")
+    config = neat3p.Config(
+        neat3p.DefaultGenome,
+        neat3p.DefaultReproduction,
+        neat3p.DefaultSpeciesSet,
+        neat3p.DefaultStagnation,
+        config_path,
+    )
+    config.genome_config.add_aggregation("minabs", minabs_aggregation)
+    assert config.genome_config.aggregation_function_defs.get("minabs") is not None
+    assert config.genome_config.aggregation_function_defs["minabs"] is not None
+    assert config.genome_config.aggregation_function_defs.is_valid("minabs")
 
 
 def dud_function():
@@ -77,26 +80,26 @@ def dud_function():
 
 def test_function_set():
     s = aggregations.AggregationFunctionSet()
-    assert s.get('sum') is not None
-    assert s.get('product') is not None
-    assert s.get('max') is not None
-    assert s.get('min') is not None
-    assert s.get('maxabs') is not None
-    assert s.get('median') is not None
-    assert s.get('mean') is not None
+    assert s.get("sum") is not None
+    assert s.get("product") is not None
+    assert s.get("max") is not None
+    assert s.get("min") is not None
+    assert s.get("maxabs") is not None
+    assert s.get("median") is not None
+    assert s.get("mean") is not None
 
-    assert s.is_valid('sum')
-    assert s.is_valid('product')
-    assert s.is_valid('max')
-    assert s.is_valid('min')
-    assert s.is_valid('maxabs')
-    assert s.is_valid('median')
-    assert s.is_valid('mean')
+    assert s.is_valid("sum")
+    assert s.is_valid("product")
+    assert s.is_valid("max")
+    assert s.is_valid("min")
+    assert s.is_valid("maxabs")
+    assert s.is_valid("median")
+    assert s.is_valid("mean")
 
-    assert not s.is_valid('foo')
+    assert not s.is_valid("foo")
 
     try:
-        ignored = s['foo']
+        ignored = s["foo"]
     except TypeError:
         pass
     else:
@@ -105,13 +108,17 @@ def test_function_set():
 
 def test_bad_add1():
     local_dir = os.path.dirname(__file__)
-    config_path = os.path.join(local_dir, 'test_configuration')
-    config = neat3p.Config(neat3p.DefaultGenome, neat3p.DefaultReproduction,
-                         neat3p.DefaultSpeciesSet, neat3p.DefaultStagnation,
-                         config_path)
+    config_path = os.path.join(local_dir, "test_configuration")
+    config = neat3p.Config(
+        neat3p.DefaultGenome,
+        neat3p.DefaultReproduction,
+        neat3p.DefaultSpeciesSet,
+        neat3p.DefaultStagnation,
+        config_path,
+    )
 
     try:
-        config.genome_config.add_aggregation('1.0', 1.0)
+        config.genome_config.add_aggregation("1.0", 1.0)
     except TypeError:
         pass
     else:
@@ -120,20 +127,24 @@ def test_bad_add1():
 
 def test_bad_add2():
     local_dir = os.path.dirname(__file__)
-    config_path = os.path.join(local_dir, 'test_configuration')
-    config = neat3p.Config(neat3p.DefaultGenome, neat3p.DefaultReproduction,
-                         neat3p.DefaultSpeciesSet, neat3p.DefaultStagnation,
-                         config_path)
+    config_path = os.path.join(local_dir, "test_configuration")
+    config = neat3p.Config(
+        neat3p.DefaultGenome,
+        neat3p.DefaultReproduction,
+        neat3p.DefaultSpeciesSet,
+        neat3p.DefaultStagnation,
+        config_path,
+    )
 
     try:
-        config.genome_config.add_aggregation('dud_function', dud_function)
+        config.genome_config.add_aggregation("dud_function", dud_function)
     except TypeError:
         pass
     else:
         raise Exception("Should have had a TypeError/derived for dud_function")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test_sum()
     test_product()
     test_max()

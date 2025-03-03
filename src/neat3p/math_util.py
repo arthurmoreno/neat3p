@@ -1,6 +1,6 @@
 """Commonly used functions not available in the Python2 standard library."""
 
-from math import sqrt, exp
+from math import exp, sqrt
 
 
 def mean(values):
@@ -47,5 +47,4 @@ def softmax(values):
 
 
 # Lookup table for commonly used {value} -> value functions.
-stat_functions = {'min': min, 'max': max, 'mean': mean, 'median': median,
-                  'median2': median2}
+stat_functions = {"min": min, "max": max, "mean": mean, "median": median, "median2": median2}

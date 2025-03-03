@@ -1,8 +1,8 @@
 """Deals with the attributes (variable parameters) of genes"""
-from random import choice, gauss, random, uniform, randint
+
+from random import choice, gauss, randint, random, uniform
 
 from .config import ConfigParameter
-
 
 # TODO: There is probably a lot of room for simplification of these classes using metaprogramming.
 
@@ -22,8 +22,7 @@ class BaseAttribute(object):
         return f"{self.name}_{config_item_base_name}"
 
     def get_config_params(self):
-        return [ConfigParameter(self.config_item_name(n), ci[0], ci[1])
-                for n, ci in self._config_items.items()]
+        return [ConfigParameter(self.config_item_name(n), ci[0], ci[1]) for n, ci in self._config_items.items()]
 
 
 class FloatAttribute(BaseAttribute):
@@ -31,14 +30,17 @@ class FloatAttribute(BaseAttribute):
     Class for floating-point numeric attributes,
     such as the response of a node or the weight of a connection.
     """
-    _config_items = {"init_mean": [float, None],
-                     "init_stdev": [float, None],
-                     "init_type": [str, 'gaussian'],
-                     "replace_rate": [float, None],
-                     "mutate_rate": [float, None],
-                     "mutate_power": [float, None],
-                     "max_value": [float, None],
-                     "min_value": [float, None]}
+
+    _config_items = {
+        "init_mean": [float, None],
+        "init_stdev": [float, None],
+        "init_type": [str, "gaussian"],
+        "replace_rate": [float, None],
+        "mutate_rate": [float, None],
+        "mutate_power": [float, None],
+        "max_value": [float, None],
+        "min_value": [float, None],
+    }
 
     def clamp(self, value, config):
         min_value = getattr(config, self.min_value_name)
@@ -50,14 +52,12 @@ class FloatAttribute(BaseAttribute):
         stdev = getattr(config, self.init_stdev_name)
         init_type = getattr(config, self.init_type_name).lower()
 
-        if ('gauss' in init_type) or ('normal' in init_type):
+        if ("gauss" in init_type) or ("normal" in init_type):
             return self.clamp(gauss(mean, stdev), config)
 
-        if 'uniform' in init_type:
-            min_value = max(getattr(config, self.min_value_name),
-                            (mean - (2 * stdev)))
-            max_value = min(getattr(config, self.max_value_name),
-                            (mean + (2 * stdev)))
+        if "uniform" in init_type:
+            min_value = max(getattr(config, self.min_value_name), (mean - (2 * stdev)))
+            max_value = min(getattr(config, self.max_value_name), (mean + (2 * stdev)))
             return uniform(min_value, max_value)
 
         raise RuntimeError(f"Unknown init_type {getattr(config, self.init_type_name)!r} for {self.init_type_name!s}")
@@ -90,11 +90,14 @@ class IntegerAttribute(BaseAttribute):
     """
     Class for integer numeric attributes.
     """
-    _config_items = {"replace_rate": [float, None],
-                     "mutate_rate": [float, None],
-                     "mutate_power": [float, None],
-                     "max_value": [int, None],
-                     "min_value": [int, None]}
+
+    _config_items = {
+        "replace_rate": [float, None],
+        "mutate_rate": [float, None],
+        "mutate_power": [float, None],
+        "max_value": [int, None],
+        "min_value": [int, None],
+    }
 
     def clamp(self, value, config):
         min_value = getattr(config, self.min_value_name)
@@ -129,21 +132,25 @@ class IntegerAttribute(BaseAttribute):
         if max_value < min_value:
             raise RuntimeError(f"Invalid min/max configuration for {self.name}")
 
+
 class BoolAttribute(BaseAttribute):
     """Class for boolean attributes such as whether a connection is enabled or not."""
-    _config_items = {"default": [str, None],
-                     "mutate_rate": [float, None],
-                     "rate_to_true_add": [float, 0.0],
-                     "rate_to_false_add": [float, 0.0]}
+
+    _config_items = {
+        "default": [str, None],
+        "mutate_rate": [float, None],
+        "rate_to_true_add": [float, 0.0],
+        "rate_to_false_add": [float, 0.0],
+    }
 
     def init_value(self, config):
         default = str(getattr(config, self.default_name)).lower()
 
-        if default in ('1', 'on', 'yes', 'true'):
+        if default in ("1", "on", "yes", "true"):
             return True
-        elif default in ('0', 'off', 'no', 'false'):
+        elif default in ("0", "off", "no", "false"):
             return False
-        elif default in ('random', 'none'):
+        elif default in ("random", "none"):
             return bool(random() < 0.5)
 
         raise RuntimeError(f"Unknown default value {default!r} for {self.name!s}")
@@ -169,22 +176,22 @@ class BoolAttribute(BaseAttribute):
 
     def validate(self, config):
         default = str(getattr(config, self.default_name)).lower()
-        if default not in ('1', 'on', 'yes', 'true', '0', 'off', 'no', 'false', 'random', 'none'):
+        if default not in ("1", "on", "yes", "true", "0", "off", "no", "false", "random", "none"):
             raise RuntimeError(f"Invalid default value for {self.name}")
+
 
 class StringAttribute(BaseAttribute):
     """
     Class for string attributes such as the aggregation function of a node,
     which are selected from a list of options.
     """
-    _config_items = {"default": [str, 'random'],
-                     "options": [list, None],
-                     "mutate_rate": [float, None]}
+
+    _config_items = {"default": [str, "random"], "options": [list, None], "mutate_rate": [float, None]}
 
     def init_value(self, config):
         default = getattr(config, self.default_name)
 
-        if default.lower() in ('none', 'random'):
+        if default.lower() in ("none", "random"):
             options = getattr(config, self.options_name)
             return choice(options)
 
@@ -203,8 +210,8 @@ class StringAttribute(BaseAttribute):
 
     def validate(self, config):
         default = getattr(config, self.default_name)
-        if default not in ('none', 'random'):
+        if default not in ("none", "random"):
             options = getattr(config, self.options_name)
             if default not in options:
-                raise RuntimeError(f'Invalid initial value {default} for {self.name}')
+                raise RuntimeError(f"Invalid initial value {default} for {self.name}")
             assert default in options

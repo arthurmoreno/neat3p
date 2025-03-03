@@ -2,15 +2,16 @@
 Gathers (via the reporting interface) and provides (to callers and/or a file)
 the most-fit genomes and information on genome/species fitness and species sizes.
 """
+
 import copy
 import csv
 
-from .math_util import mean, stdev, median2
+from .math_util import mean, median2, stdev
 from .reporting import BaseReporter
-
 
 # TODO: Make a version of this reporter that doesn't continually increase memory usage.
 # (Maybe periodically write blocks of history to disk, or log stats in a database?)
+
 
 class StatisticsReporter(BaseReporter):
     """
@@ -83,11 +84,9 @@ class StatisticsReporter(BaseReporter):
         self.save_species_count()
         self.save_species_fitness()
 
-    def save_genome_fitness(self,
-                            delimiter=' ',
-                            filename='fitness_history.csv'):
-        """ Saves the population's best and average fitness. """
-        with open(filename, 'w') as f:
+    def save_genome_fitness(self, delimiter=" ", filename="fitness_history.csv"):
+        """Saves the population's best and average fitness."""
+        with open(filename, "w") as f:
             w = csv.writer(f, delimiter=delimiter)
 
             best_fitness = [c.fitness for c in self.most_fit_genomes]
@@ -96,16 +95,16 @@ class StatisticsReporter(BaseReporter):
             for best, avg in zip(best_fitness, avg_fitness):
                 w.writerow([best, avg])
 
-    def save_species_count(self, delimiter=' ', filename='speciation.csv'):
-        """ Log speciation throughout evolution. """
-        with open(filename, 'w') as f:
+    def save_species_count(self, delimiter=" ", filename="speciation.csv"):
+        """Log speciation throughout evolution."""
+        with open(filename, "w") as f:
             w = csv.writer(f, delimiter=delimiter)
             for s in self.get_species_sizes():
                 w.writerow(s)
 
-    def save_species_fitness(self, delimiter=' ', null_value='NA', filename='species_fitness.csv'):
-        """ Log species' average fitness throughout evolution. """
-        with open(filename, 'w') as f:
+    def save_species_fitness(self, delimiter=" ", null_value="NA", filename="species_fitness.csv"):
+        """Log species' average fitness throughout evolution."""
+        with open(filename, "w") as f:
             w = csv.writer(f, delimiter=delimiter)
             for s in self.get_species_fitness(null_value):
                 w.writerow(s)
@@ -123,7 +122,7 @@ class StatisticsReporter(BaseReporter):
 
         return species_counts
 
-    def get_species_fitness(self, null_value=''):
+    def get_species_fitness(self, null_value=""):
         all_species = set()
         for gen_data in self.generation_statistics:
             all_species = all_species.union(gen_data.keys())

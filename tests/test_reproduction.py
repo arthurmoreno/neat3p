@@ -53,5 +53,5 @@ class TestSpawnComputation(unittest.TestCase):
         self.assertEqual(spawn, [20, 20])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

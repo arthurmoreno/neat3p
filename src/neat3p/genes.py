@@ -1,9 +1,9 @@
 """Handles node and connection genes."""
+
 import warnings
 from random import random
 
-from .attributes import FloatAttribute, BoolAttribute, StringAttribute
-
+from .attributes import BoolAttribute, FloatAttribute, StringAttribute
 
 # TODO: There is probably a lot of room for simplification of these classes using metaprogramming.
 # TODO: Evaluate using __slots__ for performance/memory usage improvement.
@@ -19,9 +19,9 @@ class BaseGene(object):
         self.key = key
 
     def __str__(self):
-        attrib = ['key'] + [a.name for a in self._gene_attributes]
-        attrib = [f'{a}={getattr(self, a)}' for a in attrib]
-        return f'{self.__class__.__name__}({", ".join(attrib)})'
+        attrib = ["key"] + [a.name for a in self._gene_attributes]
+        attrib = [f"{a}={getattr(self, a)}" for a in attrib]
+        return f"{self.__class__.__name__}({', '.join(attrib)})"
 
     def __lt__(self, other):
         assert isinstance(self.key, type(other.key)), f"Cannot compare keys {self.key!r} and {other.key!r}"
@@ -34,11 +34,12 @@ class BaseGene(object):
     @classmethod
     def get_config_params(cls):
         params = []
-        if not hasattr(cls, '_gene_attributes'):
-            setattr(cls, '_gene_attributes', getattr(cls, '__gene_attributes__'))
+        if not hasattr(cls, "_gene_attributes"):
+            setattr(cls, "_gene_attributes", getattr(cls, "__gene_attributes__"))
             warnings.warn(
                 f"Class '{cls.__name__!s}' {cls!r} needs '_gene_attributes' not '__gene_attributes__'",
-                DeprecationWarning)
+                DeprecationWarning,
+            )
         for a in cls._gene_attributes:
             params += a.get_config_params()
         return params
@@ -65,7 +66,7 @@ class BaseGene(object):
         return new_gene
 
     def crossover(self, gene2):
-        """ Creates a new gene randomly inheriting attributes from its parents."""
+        """Creates a new gene randomly inheriting attributes from its parents."""
         assert self.key == gene2.key
 
         # Note: we use "a if random() > 0.5 else b" instead of choice((a, b))
@@ -84,10 +85,12 @@ class BaseGene(object):
 
 
 class DefaultNodeGene(BaseGene):
-    _gene_attributes = [FloatAttribute('bias'),
-                        FloatAttribute('response'),
-                        StringAttribute('activation', options=''),
-                        StringAttribute('aggregation', options='')]
+    _gene_attributes = [
+        FloatAttribute("bias"),
+        FloatAttribute("response"),
+        StringAttribute("activation", options=""),
+        StringAttribute("aggregation", options=""),
+    ]
 
     def __init__(self, key):
         assert isinstance(key, int), f"DefaultNodeGene key must be an int, not {key!r}"
@@ -109,8 +112,7 @@ class DefaultNodeGene(BaseGene):
 # `product` aggregation function is rather more important than one giving
 # an output of 1 from the connection, for instance!)
 class DefaultConnectionGene(BaseGene):
-    _gene_attributes = [FloatAttribute('weight'),
-                        BoolAttribute('enabled')]
+    _gene_attributes = [FloatAttribute("weight"), BoolAttribute("enabled")]
 
     def __init__(self, key):
         assert isinstance(key, tuple), f"DefaultConnectionGene key must be a tuple, not {key!r}"
