@@ -146,8 +146,15 @@ target_link_libraries(_neat3p PRIVATE
 # Ensure schema generation runs before building the module
 add_dependencies(_neat3p GenerateFlatBuffers)
 
-# Install directive for scikit-build
+# ------------------------------------------------------------------------------
+# Install directives
+# ------------------------------------------------------------------------------
+# Install the compiled Python extension module into the neat3p package directory
 install(TARGETS _neat3p LIBRARY DESTINATION neat3p)
+
+# Install the umbrella header for C++ users.
+# Adjust the path to neat3p.hpp if it's located somewhere else.
+install(FILES ${CMAKE_SOURCE_DIR}/src/neat3p.hpp DESTINATION include/neat3p)
 
 # ------------------------------------------------------------------------------
 # Final Message
