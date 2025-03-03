@@ -127,8 +127,7 @@ class IntegerAttribute(BaseAttribute):
         min_value = getattr(config, self.min_value_name)
         max_value = getattr(config, self.max_value_name)
         if max_value < min_value:
-            raise RuntimeError("Invalid min/max configuration for {self.name}")
-
+            raise RuntimeError(f"Invalid min/max configuration for {self.name}")
 
 class BoolAttribute(BaseAttribute):
     """Class for boolean attributes such as whether a connection is enabled or not."""
