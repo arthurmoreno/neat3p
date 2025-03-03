@@ -32,6 +32,7 @@ classifiers = [
 
 [tool.scikit-build]
 cmake.verbose = true
+cmake.args = ["-G", "Ninja"]
 # cmake.build-type = "Debug"
 
 build-dir = "build/{wheel_tag}"

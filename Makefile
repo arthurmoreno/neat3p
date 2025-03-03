@@ -45,3 +45,8 @@ generate-stubs:
 .PHONY: build-and-install
 build-and-install: build-test generate-stubs install-package conda-install
 	@echo "Build, stubs generated, and module installed."
+
+.PHONY: format
+format:
+	@echo "Formatting and sorting imports with Ruff..."
+	ruff format . && ruff check --fix .
