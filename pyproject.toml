@@ -38,3 +38,11 @@ build-dir = "build/{wheel_tag}"
 
 # Build stable ABI wheels for CPython 3.12+
 wheel.py-api = "cp312"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.package-data]
+# This tells setuptools to include the header file from the install tree
+neat3p = ["include/neat3p/neat3p.hpp"]
+"" = ["*.hpp", "*.h"]
