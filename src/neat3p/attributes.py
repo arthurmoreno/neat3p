@@ -170,8 +170,7 @@ class BoolAttribute(BaseAttribute):
     def validate(self, config):
         default = str(getattr(config, self.default_name)).lower()
         if default not in ('1', 'on', 'yes', 'true', '0', 'off', 'no', 'false', 'random', 'none'):
-            raise RuntimeError("Invalid default value for {self.name}")
-
+            raise RuntimeError(f"Invalid default value for {self.name}")
 
 class StringAttribute(BaseAttribute):
     """
