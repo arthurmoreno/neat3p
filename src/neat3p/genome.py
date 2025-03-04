@@ -46,7 +46,7 @@ class DefaultGenomeConfig(object):
             ConfigParameter("conn_delete_prob", float),
             ConfigParameter("node_add_prob", float),
             ConfigParameter("node_delete_prob", float),
-            ConfigParameter("single_structural_mutation", bool, "false"),
+            ConfigParameter("single_structural_mutation", bool, False),
             ConfigParameter("structural_mutation_surer", str, "default"),
             ConfigParameter("initial_connection", str, "unconnected"),
         ]

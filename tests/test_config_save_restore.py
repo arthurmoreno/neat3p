@@ -49,9 +49,9 @@ class ConfigTests(unittest.TestCase):
 
         self.assertEqual(names1, names2)
 
-        for n in names1:
-            v1 = getattr(config1, n)
-            v2 = getattr(config2, n)
+        for name in names1:
+            v1 = getattr(config1, name)
+            v2 = getattr(config2, name)
             self.assertEqual(v1, v2)
 
     def test_config_save_restore1(self):
