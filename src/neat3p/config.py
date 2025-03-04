@@ -4,78 +4,8 @@ import os
 import warnings
 from configparser import ConfigParser
 
+from ._neat3p import ConfigParameter
 
-class ConfigParameter(object):
-    """Contains information about one configuration item."""
-
-    def __init__(self, name, value_type, default=None):
-        self.name = name
-        self.value_type = value_type
-        self.default = default
-
-    def __repr__(self):
-        if self.default is None:
-            return f"ConfigParameter({self.name!r}, {self.value_type!r})"
-        return f"ConfigParameter({self.name!r}, {self.value_type!r}, {self.default!r})"
-
-    def parse(self, section, config_parser):
-        if int == self.value_type:
-            return config_parser.getint(section, self.name)
-        if bool == self.value_type:
-            return config_parser.getboolean(section, self.name)
-        if float == self.value_type:
-            return config_parser.getfloat(section, self.name)
-        if list == self.value_type:
-            v = config_parser.get(section, self.name)
-            return v.split(" ")
-        if str == self.value_type:
-            return config_parser.get(section, self.name)
-
-        raise RuntimeError(f"Unexpected configuration type: {self.value_type!r}")
-
-    def interpret(self, config_dict):
-        """
-        Converts the config_parser output into the proper type,
-        supplies defaults if available and needed, and checks for some errors.
-        """
-        value = config_dict.get(self.name)
-        if value is None:
-            if self.default is None:
-                raise RuntimeError("Missing configuration item: " + self.name)
-            else:
-                warnings.warn(f"Using default {self.default!r} for '{self.name!s}'", DeprecationWarning)
-                if (str != self.value_type) and isinstance(self.default, self.value_type):
-                    return self.default
-                else:
-                    value = self.default
-
-        try:
-            if str == self.value_type:
-                return str(value)
-            if int == self.value_type:
-                return int(value)
-            if bool == self.value_type:
-                if value.lower() == "true":
-                    return True
-                elif value.lower() == "false":
-                    return False
-                else:
-                    raise RuntimeError(self.name + " must be True or False")
-            if float == self.value_type:
-                return float(value)
-            if list == self.value_type:
-                return value.split(" ")
-        except Exception:
-            raise RuntimeError(
-                f"Error interpreting config item '{self.name}' with value {value!r} and type {self.value_type}"
-            )
-
-        raise RuntimeError("Unexpected configuration type: " + repr(self.value_type))
-
-    def format(self, value):
-        if list == self.value_type:
-            return " ".join(value)
-        return str(value)
 
 
 def write_pretty_params(f, config, params):

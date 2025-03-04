@@ -2,7 +2,7 @@
 
 from random import choice, gauss, randint, random, uniform
 
-from .config import ConfigParameter
+from ._neat3p import ConfigParameter
 
 # TODO: There is probably a lot of room for simplification of these classes using metaprogramming.
 
