@@ -173,5 +173,3 @@ cython_debug/
 # ### Neat3P
 
 _skbuild
-libs/nanobind
-libs/flatbuffers
