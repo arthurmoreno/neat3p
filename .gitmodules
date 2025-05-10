@@ -1,0 +1,6 @@
+[submodule "libs/nanobind"]
+	path = libs/nanobind
+	url = https://github.com/wjakob/nanobind
+[submodule "libs/flatbuffers"]
+	path = libs/flatbuffers
+	url = https://github.com/google/flatbuffers

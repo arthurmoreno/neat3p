@@ -5,37 +5,31 @@ project(neat3p LANGUAGES CXX)
 # ------------------------------------------------------------------------------
 # Basic Setup
 # ------------------------------------------------------------------------------
-list(APPEND CMAKE_PREFIX_PATH "~/anaconda3/envs/neat3p")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/src")
-
-# If you need a specific compiler:
-set(CMAKE_CXX_COMPILER /usr/bin/g++-12)
-
-project(Neat3pProject LANGUAGES CXX)
-set(CMAKE_CXX_STANDARD 20)
-
+message(STATUS "CMAKE_SOURCE_DIR: ${CMAKE_SOURCE_DIR}")
 
 # ------------------------------------------------------------------------------
-# nanobind Setup
+# Python and nanobind Setup
 # ------------------------------------------------------------------------------
-# Point to nanobind submodule directory
+find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+
 set(NANOBIND_DIR "${CMAKE_SOURCE_DIR}/libs/nanobind")
 include_directories(${NANOBIND_DIR}/include)
 add_subdirectory(${NANOBIND_DIR})
 
-# Determine the nanobind CMake include path and register it
-# execute_process(
-#         COMMAND "${Python_EXECUTABLE}" -m nanobind --cmake_dir
-#         OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE NB_DIR)
+# ------------------------------------------------------------------------------
+# Project Setup
+# ------------------------------------------------------------------------------
 
-# message(STATUS "NanoBind Cmake directory: " ${NB_DIR})
-# list(APPEND CMAKE_PREFIX_PATH "${NB_DIR}")
+project(Neat3pProject LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 20)
 
 # ------------------------------------------------------------------------------
 # Build Options & Flags
 # ------------------------------------------------------------------------------
 # Example optimization flags
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native -flto -ffast-math")
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Disable shared libraries" FORCE)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -flto -ffast-math")
 
 # Colored diagnostics in GCC/Clang
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
@@ -51,11 +45,12 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always -fvisibility=
 # ------------------------------------------------------------------------------
 # Required Packages
 # ------------------------------------------------------------------------------
-find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
 set(nanobind_DIR "${CMAKE_SOURCE_DIR}/libs/nanobind/cmake")
 find_package(nanobind CONFIG REQUIRED)
 
 find_package(msgpack REQUIRED)
+
+add_compile_definitions(SPDLOG_HEADER_ONLY)
 find_package(spdlog REQUIRED)
 
 # find_package(nanobind CONFIG REQUIRED)
