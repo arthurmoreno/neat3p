@@ -176,7 +176,18 @@ class BoolAttribute(BaseAttribute):
 
     def validate(self, config):
         default = str(getattr(config, self.default_name)).lower()
-        if default not in ("1", "on", "yes", "true", "0", "off", "no", "false", "random", "none"):
+        if default not in (
+            "1",
+            "on",
+            "yes",
+            "true",
+            "0",
+            "off",
+            "no",
+            "false",
+            "random",
+            "none",
+        ):
             raise RuntimeError(f"Invalid default value for {self.name}")
 
 
@@ -186,7 +197,11 @@ class StringAttribute(BaseAttribute):
     which are selected from a list of options.
     """
 
-    _config_items = {"default": [str, "random"], "options": [list, None], "mutate_rate": [float, None]}
+    _config_items = {
+        "default": [str, "random"],
+        "options": [list, None],
+        "mutate_rate": [float, None],
+    }
 
     def init_value(self, config):
         default = getattr(config, self.default_name)

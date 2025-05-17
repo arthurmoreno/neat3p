@@ -300,7 +300,8 @@ class DefaultGenome(BaseModel):
 
         if config.single_structural_mutation:
             div = max(
-                1, (config.node_add_prob + config.node_delete_prob + config.conn_add_prob + config.conn_delete_prob)
+                1,
+                (config.node_add_prob + config.node_delete_prob + config.conn_add_prob + config.conn_delete_prob),
             )
             r = random()
             if r < (config.node_add_prob / div):
@@ -604,7 +605,10 @@ class DefaultGenome(BaseModel):
 
     def get_pruned_copy(self, genome_config):
         used_node_genes, used_connection_genes = get_pruned_genes(
-            self.nodes, self.connections, genome_config.input_keys, genome_config.output_keys
+            self.nodes,
+            self.connections,
+            genome_config.input_keys,
+            genome_config.output_keys,
         )
         new_genome = DefaultGenome(key=0)
         new_genome.nodes = used_node_genes

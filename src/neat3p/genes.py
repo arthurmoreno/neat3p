@@ -127,7 +127,10 @@ class DefaultNodeGene(BaseGene):
 class DefaultConnectionGene(BaseGene):
     weight: float = 1.0
     enabled: bool = True
-    _gene_attributes: ClassVar[list[BaseAttribute]] = [FloatAttribute("weight"), BoolAttribute("enabled")]
+    _gene_attributes: ClassVar[list[BaseAttribute]] = [
+        FloatAttribute("weight"),
+        BoolAttribute("enabled"),
+    ]
 
     def distance(self, other, config):
         d = abs(self.weight - other.weight)

@@ -112,8 +112,20 @@ def host_is_local(hostname, port=22):  # no port specified, just use the ssh por
         return True
     localaddrs = socket.getaddrinfo(localhost, port)
     targetaddrs = socket.getaddrinfo(hostname, port)
-    for ignored_family, ignored_socktype, ignored_proto, ignored_canonname, sockaddr in localaddrs:
-        for ignored_rfamily, ignored_rsocktype, ignored_rproto, ignored_rcanonname, rsockaddr in targetaddrs:
+    for (
+        ignored_family,
+        ignored_socktype,
+        ignored_proto,
+        ignored_canonname,
+        sockaddr,
+    ) in localaddrs:
+        for (
+            ignored_rfamily,
+            ignored_rsocktype,
+            ignored_rproto,
+            ignored_rcanonname,
+            rsockaddr,
+        ) in targetaddrs:
             if rsockaddr[0] == sockaddr[0]:
                 return True
     return False
@@ -362,7 +374,10 @@ class DistributedEvaluator(object):
             try:
                 self.num_workers = max(1, multiprocessing.cpu_count())
             except (RuntimeError, AttributeError):  # pragma: no cover
-                print("multiprocessing.cpu_count() gave an error; assuming 1", file=sys.stderr)
+                print(
+                    "multiprocessing.cpu_count() gave an error; assuming 1",
+                    file=sys.stderr,
+                )
                 self.num_workers = 1
         self.worker_timeout = worker_timeout
         self.mode = _determine_mode(self.addr, mode)
@@ -480,7 +495,14 @@ class DistributedEvaluator(object):
             running = True
             try:
                 self._reset_em()
-            except (socket.error, EOFError, IOError, OSError, socket.gaierror, TypeError):
+            except (
+                socket.error,
+                EOFError,
+                IOError,
+                OSError,
+                socket.gaierror,
+                TypeError,
+            ):
                 continue
             while running:
                 i += 1
@@ -488,7 +510,14 @@ class DistributedEvaluator(object):
                     # for better performance, only check every 5 cycles
                     try:
                         state = self.em.secondary_state
-                    except (socket.error, EOFError, IOError, OSError, socket.gaierror, TypeError):
+                    except (
+                        socket.error,
+                        EOFError,
+                        IOError,
+                        OSError,
+                        socket.gaierror,
+                        TypeError,
+                    ):
                         if not reconnect:
                             raise
                         else:
@@ -504,7 +533,14 @@ class DistributedEvaluator(object):
                     tasks = self.inqueue.get(block=True, timeout=0.2)
                 except queue.Empty:
                     continue
-                except (socket.error, EOFError, IOError, OSError, socket.gaierror, TypeError):
+                except (
+                    socket.error,
+                    EOFError,
+                    IOError,
+                    OSError,
+                    socket.gaierror,
+                    TypeError,
+                ):
                     break
                 except (managers.RemoteError, multiprocessing.ProcessError) as e:
                     if ("Empty" in repr(e)) or ("TimeoutError" in repr(e)):
@@ -529,7 +565,14 @@ class DistributedEvaluator(object):
                     res = zip(genome_ids, results)
                 try:
                     self.outqueue.put(res)
-                except (socket.error, EOFError, IOError, OSError, socket.gaierror, TypeError):
+                except (
+                    socket.error,
+                    EOFError,
+                    IOError,
+                    OSError,
+                    socket.gaierror,
+                    TypeError,
+                ):
                     break
                 except (managers.RemoteError, multiprocessing.ProcessError) as e:
                     if ("Empty" in repr(e)) or ("TimeoutError" in repr(e)):
