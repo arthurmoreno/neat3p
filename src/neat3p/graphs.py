@@ -1,5 +1,29 @@
 """Directed graph algorithm implementations."""
 
+from typing import Any
+
+
+def parse_connections(connections: list[str] | dict[str, Any]) -> list[tuple[int, int]]:
+    # normalize connection keys to tuples
+    if isinstance(connections, dict):
+        keys_iter: list[str] = connections.keys()
+    else:
+        keys_iter: list[str] = connections
+    parsed_connections: list[tuple[int, int]] = []
+    for k in keys_iter:
+        if isinstance(k, str) and "," in k:
+            a, b = k.split(",", 1)
+            try:
+                parsed_connections.append((int(a), int(b)))
+            except ValueError:
+                raise ValueError(f"Invalid connection key '{k}'. Expected format 'input_id,output_id'.")
+        elif isinstance(k, tuple):
+            parsed_connections.append(k)
+        else:
+            raise ValueError(f"Invalid connection key '{k}'.")
+
+    return parsed_connections
+
 
 def creates_cycle(connections, test):
     """
@@ -13,7 +37,7 @@ def creates_cycle(connections, test):
     visited = {o}
     while True:
         num_added = 0
-        for a, b in connections:
+        for a, b in parse_connections(connections):
             if a in visited and b not in visited:
                 if b == i:
                     return True
@@ -42,7 +66,7 @@ def required_for_output(inputs, outputs, connections):
     s = set(outputs)
     while 1:
         # Find nodes not in s whose output is consumed by a node in s.
-        t = set(a for (a, b) in connections if b in s and a not in s)
+        t: set[int] = set(a for (a, b) in parse_connections(connections) if b in s and a not in s)
 
         if not t:
             break
@@ -76,7 +100,7 @@ def feed_forward_layers(inputs, outputs, connections):
     while 1:
         # Find candidate nodes c for the next layer.  These nodes should connect
         # a node in s to a node not in s.
-        c = set(b for (a, b) in connections if a in s and b not in s)
+        c = set(b for (a, b) in parse_connections(connections) if a in s and b not in s)
         # Keep only the used nodes whose entire input set is contained in s.
         t = set()
         for n in c:

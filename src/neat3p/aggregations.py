@@ -76,7 +76,10 @@ class AggregationFunctionSet(object):
         return f
 
     def __getitem__(self, index):
-        warnings.warn("Use get, not indexing ([{!r}]), for aggregation functions".format(index), DeprecationWarning)
+        warnings.warn(
+            "Use get, not indexing ([{!r}]), for aggregation functions".format(index),
+            DeprecationWarning,
+        )
         return self.get(index)
 
     def is_valid(self, name):

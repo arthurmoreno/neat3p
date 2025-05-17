@@ -5,6 +5,8 @@ import sys
 from itertools import count
 from random import choice, random, shuffle
 
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
 from .activations import ActivationFunctionSet
 from .aggregations import AggregationFunctionSet
 from .config import ConfigParameter, write_pretty_params
@@ -15,7 +17,7 @@ from .graphs import creates_cycle, required_for_output
 class DefaultGenomeConfig(object):
     """Sets up and holds configuration information for the DefaultGenome class."""
 
-    allowed_connectivity = [
+    allowed_connectivity: list[str] = [
         "unconnected",
         "fs_neat_nohidden",
         "fs_neat",
@@ -139,7 +141,7 @@ class DefaultGenomeConfig(object):
             raise RuntimeError(error_string)
 
 
-class DefaultGenome(object):
+class DefaultGenome(BaseModel):
     """
     A genome for generalized neural networks.
 
@@ -161,6 +163,34 @@ class DefaultGenome(object):
         4. The input values are applied to the input pins unmodified.
     """
 
+    key: int
+    connections: dict[tuple[int, int] | str, DefaultConnectionGene] = Field(default_factory=dict)
+    nodes: dict[int, DefaultNodeGene] = Field(default_factory=dict)
+    fitness: float | None = None
+
+    # allow arbitrary external types
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    @field_validator("connections", mode="before")
+    @classmethod
+    def _parse_connection_keys(cls, v):
+        """
+        Convert string keys like "-65,1" back to tuple keys before Pydantic validation.
+        """
+        if isinstance(v, dict):
+            new = {}
+            for key, genome in v.items():
+                new_key = key
+                if isinstance(key, str) and "," in key:
+                    a, b = key.split(",", 1)
+                    try:
+                        new_key: tuple[int, int] = (int(a), int(b))
+                    except ValueError:
+                        pass
+                new[new_key] = genome
+            return new
+        return v
+
     @classmethod
     def parse_config(cls, param_dict):
         param_dict["node_gene_type"] = DefaultNodeGene
@@ -170,17 +200,6 @@ class DefaultGenome(object):
     @classmethod
     def write_config(cls, f, config):
         config.save(f)
-
-    def __init__(self, key):
-        # Unique identifier for a genome instance.
-        self.key = key
-
-        # (gene_key, gene) pairs for gene sets.
-        self.connections = {}
-        self.nodes = {}
-
-        # Fitness results.
-        self.fitness = None
 
     def configure_new(self, config):
         """Configure a new genome based on the given configuration."""
@@ -245,7 +264,7 @@ class DefaultGenome(object):
                     )
                 self.connect_partial_nodirect(config)
 
-    def configure_crossover(self, genome1, genome2, config):
+    def configure_crossover(self, genome1: "DefaultGenome", genome2: "DefaultGenome", config):
         """Configure a new genome by crossover from two parent genomes."""
         if genome1.fitness > genome2.fitness:
             parent1, parent2 = genome1, genome2
@@ -281,7 +300,8 @@ class DefaultGenome(object):
 
         if config.single_structural_mutation:
             div = max(
-                1, (config.node_add_prob + config.node_delete_prob + config.conn_add_prob + config.conn_delete_prob)
+                1,
+                (config.node_add_prob + config.node_delete_prob + config.conn_add_prob + config.conn_delete_prob),
             )
             r = random()
             if r < (config.node_add_prob / div):
@@ -322,7 +342,7 @@ class DefaultGenome(object):
             return
 
         # Choose a random connection to split
-        conn_to_split = choice(list(self.connections.values()))
+        conn_to_split: DefaultConnectionGene = choice(list(self.connections.values()))
         new_node_id = config.get_new_node_key(self.nodes)
         ng = self.create_node(config, new_node_id)
         self.nodes[new_node_id] = ng
@@ -332,7 +352,10 @@ class DefaultGenome(object):
         # the original connection (depending on the activation function of the new node).
         conn_to_split.enabled = False
 
-        i, o = conn_to_split.key
+        if isinstance(conn_to_split.key, tuple):
+            i, o = conn_to_split.key
+        else:
+            raise RuntimeError("Connection key must be a tuple.")
         self.add_connection(config, i, new_node_id, 1.0, True)
         self.add_connection(config, new_node_id, o, conn_to_split.weight, True)
 
@@ -342,8 +365,8 @@ class DefaultGenome(object):
         assert isinstance(output_key, int)
         assert output_key >= 0
         assert isinstance(enabled, bool)
-        key = (input_key, output_key)
-        connection = config.connection_gene_type(key)
+        key: tuple[int, int] = (input_key, output_key)
+        connection = config.connection_gene_type(key=key)
         connection.init_attributes(config)
         connection.weight = weight
         connection.enabled = enabled
@@ -361,7 +384,7 @@ class DefaultGenome(object):
         in_node = choice(possible_inputs)
 
         # Don't duplicate connections.
-        key = (in_node, out_node)
+        key: tuple[int, int] = (in_node, out_node)
         if key in self.connections:
             # TODO: Should this be using mutation to/from rates? Hairy to configure...
             if config.check_structural_mutation_surer():
@@ -392,7 +415,7 @@ class DefaultGenome(object):
 
         connections_to_delete = set()
         for k, v in self.connections.items():
-            if del_key in v.key:
+            if isinstance(v.key, tuple) and del_key in v.key:
                 connections_to_delete.add(v.key)
 
         for key in connections_to_delete:
@@ -404,7 +427,7 @@ class DefaultGenome(object):
 
     def mutate_delete_connection(self):
         if self.connections:
-            key = choice(list(self.connections.keys()))
+            key: tuple[int, int] = choice(list(self.connections.keys()))
             del self.connections[key]
 
     def distance(self, other, config):
@@ -477,13 +500,13 @@ class DefaultGenome(object):
 
     @staticmethod
     def create_node(config, node_id):
-        node = config.node_gene_type(node_id)
+        node = config.node_gene_type(key=node_id)
         node.init_attributes(config)
         return node
 
     @staticmethod
     def create_connection(config, input_id, output_id):
-        connection = config.connection_gene_type((input_id, output_id))
+        connection = config.connection_gene_type(key=(input_id, output_id))
         connection.init_attributes(config)
         return connection
 
@@ -582,9 +605,12 @@ class DefaultGenome(object):
 
     def get_pruned_copy(self, genome_config):
         used_node_genes, used_connection_genes = get_pruned_genes(
-            self.nodes, self.connections, genome_config.input_keys, genome_config.output_keys
+            self.nodes,
+            self.connections,
+            genome_config.input_keys,
+            genome_config.output_keys,
         )
-        new_genome = DefaultGenome(None)
+        new_genome = DefaultGenome(key=0)
         new_genome.nodes = used_node_genes
         new_genome.connections = used_connection_genes
         return new_genome

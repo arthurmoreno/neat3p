@@ -7,7 +7,6 @@ from configparser import ConfigParser
 from ._neat3p import ConfigParameter
 
 
-
 def write_pretty_params(f, config, params):
     param_names = [p.name for p in params]
     longest_name = max(len(name) for name in param_names)
@@ -61,7 +60,13 @@ class Config(object):
     ]
 
     def __init__(
-        self, genome_type, reproduction_type, species_set_type, stagnation_type, filename, config_information=None
+        self,
+        genome_type,
+        reproduction_type,
+        species_set_type,
+        stagnation_type,
+        filename,
+        config_information=None,
     ):
         # Check that the provided types have the required methods.
         assert hasattr(genome_type, "parse_config")
@@ -95,7 +100,10 @@ class Config(object):
                     setattr(self, p.name, p.parse("NEAT", parameters))
                 except Exception:
                     setattr(self, p.name, p.default)
-                    warnings.warn(f"Using default {p.default!r} for '{p.name!s}'", DeprecationWarning)
+                    warnings.warn(
+                        f"Using default {p.default!r} for '{p.name!s}'",
+                        DeprecationWarning,
+                    )
             param_list_names.append(p.name)
         param_dict = dict(parameters.items("NEAT"))
         unknown_list = [x for x in param_dict if x not in param_list_names]

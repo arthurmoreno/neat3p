@@ -49,3 +49,13 @@ include-package-data = true
 # This tells setuptools to include the header file from the install tree
 neat3p = ["include/neat3p/neat3p.hpp"]
 "" = ["*.hpp", "*.h"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+exclude = ["libs", "libs/**"]
+
+[tool.ruff.lint]
+extend-select = ["I"]
+select = ["E", "F", "W", "I"]
+ignore = ["E203"]

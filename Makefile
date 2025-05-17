@@ -7,6 +7,26 @@ endif
 # Default value for PREFIX_PATH if not set in .env (Right now it must be set in the .env)
 PREFIX_PATH ?= /default/path/to/your/env
 
+.PHONY: clean
+clean:
+	rm -rf build && \
+	rm -rf neat3p.egg-info && \
+	rm -rf dist
+
+.PHONY: py-build
+py-build:
+	@echo "Building Python package..."
+	python -m build
+
+.PHONY: clean-py-build
+clean-py-build:
+	@echo "Cleaning and building Python package..."
+	rm -rf build && \
+	rm -rf neat3p.egg-info && \
+	rm -rf dist && \
+	python -m build
+	@echo "Python package build complete."
+
 clean-build-run:
 	rm -rf build && mkdir build &&  \
 	cmake -S . -B ./build -DCMAKE_PREFIX_PATH="$(PREFIX_PATH)" &&  \
