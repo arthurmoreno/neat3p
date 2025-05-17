@@ -7,7 +7,6 @@ from configparser import ConfigParser
 from ._neat3p import ConfigParameter
 
 
-
 def write_pretty_params(f, config, params):
     param_names = [p.name for p in params]
     longest_name = max(len(name) for name in param_names)

@@ -2,28 +2,33 @@
 
 import warnings
 from random import random
+from typing import ClassVar
 
-from .attributes import BoolAttribute, FloatAttribute, StringAttribute
+from pydantic import BaseModel, field_validator
+from typing_extensions import override
+
+from .attributes import BaseAttribute, BoolAttribute, FloatAttribute, StringAttribute
 
 # TODO: There is probably a lot of room for simplification of these classes using metaprogramming.
 # TODO: Evaluate using __slots__ for performance/memory usage improvement.
 
 
-class BaseGene(object):
+class BaseGene(BaseModel):
     """
     Handles functions shared by multiple types of genes (both node and connection),
     including crossover and calling mutation methods.
     """
 
-    def __init__(self, key):
-        self.key = key
+    key: str | int | tuple[int, int] = ""
+    _gene_attributes: ClassVar[list[BaseAttribute]] = []
 
-    def __str__(self):
-        attrib = ["key"] + [a.name for a in self._gene_attributes]
+    @override
+    def __str__(self) -> str:
+        attrib: list[str] = ["key"] + [a.name for a in self._gene_attributes]
         attrib = [f"{a}={getattr(self, a)}" for a in attrib]
         return f"{self.__class__.__name__}({', '.join(attrib)})"
 
-    def __lt__(self, other):
+    def __lt__(self, other: "BaseGene") -> bool:
         assert isinstance(self.key, type(other.key)), f"Cannot compare keys {self.key!r} and {other.key!r}"
         return self.key < other.key
 
@@ -85,16 +90,24 @@ class BaseGene(object):
 
 
 class DefaultNodeGene(BaseGene):
-    _gene_attributes = [
+    bias: float = 0.0
+    response: float = 0.0
+    activation: str = ""
+    aggregation: str = ""
+
+    _gene_attributes: ClassVar[list[BaseAttribute]] = [
         FloatAttribute("bias"),
         FloatAttribute("response"),
         StringAttribute("activation", options=""),
         StringAttribute("aggregation", options=""),
     ]
 
-    def __init__(self, key):
-        assert isinstance(key, int), f"DefaultNodeGene key must be an int, not {key!r}"
-        BaseGene.__init__(self, key)
+    @field_validator("key")
+    @classmethod
+    def validate_key(cls, v):
+        if not isinstance(v, int):
+            raise TypeError(f"{cls.__name__} key must be an int, not {v!r}")
+        return v
 
     def distance(self, other, config):
         d = abs(self.bias - other.bias) + abs(self.response - other.response)
@@ -112,11 +125,9 @@ class DefaultNodeGene(BaseGene):
 # `product` aggregation function is rather more important than one giving
 # an output of 1 from the connection, for instance!)
 class DefaultConnectionGene(BaseGene):
-    _gene_attributes = [FloatAttribute("weight"), BoolAttribute("enabled")]
-
-    def __init__(self, key):
-        assert isinstance(key, tuple), f"DefaultConnectionGene key must be a tuple, not {key!r}"
-        BaseGene.__init__(self, key)
+    weight: float = 1.0
+    enabled: bool = True
+    _gene_attributes: ClassVar[list[BaseAttribute]] = [FloatAttribute("weight"), BoolAttribute("enabled")]
 
     def distance(self, other, config):
         d = abs(self.weight - other.weight)
