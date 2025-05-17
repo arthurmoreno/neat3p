@@ -50,8 +50,8 @@ find_package(nanobind CONFIG REQUIRED)
 
 find_package(msgpack REQUIRED)
 
-add_compile_definitions(SPDLOG_HEADER_ONLY)
 find_package(spdlog REQUIRED)
+message(STATUS "→ spdlog version:     ${spdlog_VERSION}")
 
 # find_package(nanobind CONFIG REQUIRED)
 
