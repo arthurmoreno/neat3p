@@ -65,10 +65,8 @@ pip install . --verbose
 ### Building and distribution with docker
 
 ```bash
-docker build -t neat3p-manylinux-builder .
-docker run --rm \
-  -v "$(pwd)/dist":/project/dist \
-  neat3p-manylinux-builder
+docker build --rm -t neat3p-builder .
+docker run --rm -it -v "$(pwd)/dist":/project/dist neat3p-builder
 ```
 
 ## Usage
