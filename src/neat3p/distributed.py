@@ -358,7 +358,7 @@ class DistributedEvaluator(object):
         ``num_workers`` is the number of child processes to use if in secondary
         mode. It defaults to None, which means `multiprocessing.cpu_count()`
         is used to determine this value. If 1 in a secondary node, the process creating
-        the DistributedEvaluator instance will also do the evaulations.
+        the DistributedEvaluator instance will also do the evaluations.
         ``worker_timeout`` specifies the timeout (in seconds) for a secondary node
         getting the results from a worker subprocess; if None, there is no timeout.
         ``mode`` specifies the mode to run in; it defaults to MODE_AUTO.
