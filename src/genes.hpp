@@ -12,12 +12,11 @@ struct GenomeConfig {
     double compatibility_weight_coefficient;
 };
 
-
 // ---------------------------------------------------------------------------
 // BaseGene: Abstract base class for gene types.
 // ---------------------------------------------------------------------------
 class BaseGene {
-public:
+   public:
     // The base class no longer forces all children to have an int key.
     BaseGene() = default;
     virtual ~BaseGene() = default;

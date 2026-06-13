@@ -58,7 +58,6 @@ void DefaultNodeGene::init_attributes() {
     aggregation = "";  // Default aggregation function (empty string).
 }
 
-
 void DefaultNodeGene::mutate() {
     // Implement mutation logic, even if empty for now.
 }
@@ -68,7 +67,6 @@ void DefaultNodeGene::mutate() {
 // ---------------------------------------------------------------------------
 DefaultConnectionGene::DefaultConnectionGene(const std::pair<int, int>& key)
     : key(key), weight(0.0f), enabled(true) {}
-
 
 std::string DefaultConnectionGene::to_string() const {
     std::ostringstream oss;

@@ -64,7 +64,7 @@ class BaseGene(BaseModel):
             setattr(self, a.name, a.mutate_value(v, config))
 
     def copy(self):
-        new_gene = self.__class__(self.key)
+        new_gene = self.__class__(key=self.key)
         for a in self._gene_attributes:
             setattr(new_gene, a.name, getattr(self, a.name))
 
@@ -76,7 +76,7 @@ class BaseGene(BaseModel):
 
         # Note: we use "a if random() > 0.5 else b" instead of choice((a, b))
         # here because `choice` is substantially slower.
-        new_gene = self.__class__(self.key)
+        new_gene = self.__class__(key=self.key)
         for a in self._gene_attributes:
             if random() > 0.5:
                 setattr(new_gene, a.name, getattr(self, a.name))

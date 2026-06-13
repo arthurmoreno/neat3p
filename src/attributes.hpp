@@ -1,17 +1,19 @@
 #ifndef ATTRIBUTES_HPP
 #define ATTRIBUTES_HPP
 
-#include <stdexcept>
-#include <string>
-#include <vector>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+
 #include <algorithm>
 #include <random>
-#include "config.hpp"  // added to access ConfigParameter
+#include <stdexcept>
+#include <string>
 #include <unordered_map>
-#include <nanobind/nanobind.h>
-#include <nanobind/stl/string.h>
-#include <nanobind/stl/map.h>
-#include <nanobind/stl/vector.h>
+#include <vector>
+
+#include "config.hpp"  // added to access ConfigParameter
 
 namespace nb = nanobind;
 
@@ -31,7 +33,7 @@ struct AttributeConfig {
     // IntegerAttribute parameters
     double mutate_rate_i;
     double mutate_power_i;
-    int replace_rate_i; // use int for simplicity
+    int replace_rate_i;  // use int for simplicity
     int max_value_i;
     int min_value_i;
     // BoolAttribute parameters
@@ -45,16 +47,17 @@ struct AttributeConfig {
     double mutate_rate_s;
 };
 
-
 class BaseAttribute {
-public:
+   public:
     std::string name;
-protected:
+
+   protected:
     // New: store config item type and default value as strings.
     std::unordered_map<std::string, std::pair<std::string, std::string>> _config_items;
     // New: store generated config item names.
     std::unordered_map<std::string, std::string> _config_item_names;
-public:
+
+   public:
     // New: Helper to convert nb::dict to std::unordered_map
     static std::unordered_map<std::string, std::string> convert_dict(const nb::dict &d) {
         std::unordered_map<std::string, std::string> res;
@@ -67,9 +70,9 @@ public:
     }
 
     // Modified constructor accepting a std::unordered_map
-    BaseAttribute(const std::string &name, const std::unordered_map<std::string, std::string> &default_dict = {})
-        : name(name)
-    {
+    BaseAttribute(const std::string &name,
+                  const std::unordered_map<std::string, std::string> &default_dict = {})
+        : name(name) {
         // Assume _config_items is populated by derived classes.
         for (const auto &d : default_dict) {
             auto it = _config_items.find(d.first);
@@ -82,7 +85,7 @@ public:
             _config_item_names[kv.first] = config_item_name(kv.first);
         }
     }
-    
+
     // New: Overloaded constructor receiving nb::dict
     BaseAttribute(const std::string &name, const nb::dict &default_dict)
         : BaseAttribute(name, convert_dict(default_dict)) {}
@@ -100,7 +103,7 @@ public:
 };
 
 class FloatAttribute : public BaseAttribute {
-public:
+   public:
     // Existing constructor.
     FloatAttribute(const std::string &name) : BaseAttribute(name) {}
     // NEW: Additional constructor overload with nb::dict.
@@ -110,7 +113,7 @@ public:
     double clamp(double value, const AttributeConfig &config) const {
         return std::max(std::min(value, config.max_value_f), config.min_value_f);
     }
-    
+
     double init_value(const AttributeConfig &config) const {
         // Use a simple random engine
         static std::random_device rd;
@@ -121,14 +124,14 @@ public:
             return clamp(d(gen), config);
         }
         if (config.init_type.find("uniform") != std::string::npos) {
-            double low = std::max(config.min_value_f, config.init_mean - 2*config.init_stdev);
-            double high = std::min(config.max_value_f, config.init_mean + 2*config.init_stdev);
+            double low = std::max(config.min_value_f, config.init_mean - 2 * config.init_stdev);
+            double high = std::min(config.max_value_f, config.init_mean + 2 * config.init_stdev);
             std::uniform_real_distribution<> d(low, high);
             return d(gen);
         }
         throw std::runtime_error("Unknown init_type for " + name);
     }
-    
+
     double mutate_value(double value, const AttributeConfig &config) const {
         static std::random_device rd;
         static std::mt19937 gen(rd());
@@ -143,12 +146,12 @@ public:
         }
         return value;
     }
-    
+
     void validate(const AttributeConfig &config) const {
         if (config.max_value_f < config.min_value_f)
             throw std::runtime_error("Invalid min/max configuration for " + name);
     }
-    
+
     // NEW: Implement get_config_params (customize as needed)
     std::vector<ConfigParameter> get_config_params() const override {
         // For now, return an empty vector.
@@ -157,7 +160,7 @@ public:
 };
 
 class IntegerAttribute : public BaseAttribute {
-public:
+   public:
     IntegerAttribute(const std::string &name) : BaseAttribute(name) {}
     IntegerAttribute(const std::string &name, const nb::dict &default_dict)
         : BaseAttribute(name, default_dict) {}
@@ -165,14 +168,14 @@ public:
     int clamp(int value, const AttributeConfig &config) const {
         return std::max(std::min(value, config.max_value_i), config.min_value_i);
     }
-    
+
     int init_value(const AttributeConfig &config) const {
         static std::random_device rd;
         static std::mt19937 gen(rd());
         std::uniform_int_distribution<> d(config.min_value_i, config.max_value_i);
         return d(gen);
     }
-    
+
     int mutate_value(int value, const AttributeConfig &config) const {
         static std::random_device rd;
         static std::mt19937 gen(rd());
@@ -187,20 +190,18 @@ public:
         }
         return value;
     }
-    
+
     void validate(const AttributeConfig &config) const {
         if (config.max_value_i < config.min_value_i)
             throw std::runtime_error("Invalid min/max configuration for " + name);
     }
-    
+
     // NEW: Implement get_config_params
-    std::vector<ConfigParameter> get_config_params() const override {
-        return {};
-    }
+    std::vector<ConfigParameter> get_config_params() const override { return {}; }
 };
 
 class BoolAttribute : public BaseAttribute {
-public:
+   public:
     BoolAttribute(const std::string &name) : BaseAttribute(name) {}
     BoolAttribute(const std::string &name, const nb::dict &default_dict)
         : BaseAttribute(name, default_dict) {}
@@ -208,10 +209,8 @@ public:
     bool init_value(const AttributeConfig &config) const {
         std::string def = config.default_bool;
         std::transform(def.begin(), def.end(), def.begin(), ::tolower);
-        if (def == "1" || def == "on" || def == "yes" || def == "true")
-            return true;
-        if (def == "0" || def == "off" || def == "no" || def == "false")
-            return false;
+        if (def == "1" || def == "on" || def == "yes" || def == "true") return true;
+        if (def == "0" || def == "off" || def == "no" || def == "false") return false;
         if (def == "random" || def == "none") {
             static std::random_device rd;
             static std::mt19937 gen(rd());
@@ -220,7 +219,7 @@ public:
         }
         throw std::runtime_error("Unknown default value for " + name);
     }
-    
+
     bool mutate_value(bool value, const AttributeConfig &config) const {
         static std::random_device rd;
         static std::mt19937 gen(rd());
@@ -232,24 +231,21 @@ public:
         }
         return value;
     }
-    
+
     void validate(const AttributeConfig &config) const {
         std::string def = config.default_bool;
         std::transform(def.begin(), def.end(), def.begin(), ::tolower);
-        if (!(def=="1" || def=="on" || def=="yes" || def=="true" ||
-              def=="0" || def=="off" || def=="no" || def=="false" ||
-              def=="random" || def=="none"))
+        if (!(def == "1" || def == "on" || def == "yes" || def == "true" || def == "0" ||
+              def == "off" || def == "no" || def == "false" || def == "random" || def == "none"))
             throw std::runtime_error("Invalid default value for " + name);
     }
-    
+
     // NEW: Implement get_config_params
-    std::vector<ConfigParameter> get_config_params() const override {
-        return {};
-    }
+    std::vector<ConfigParameter> get_config_params() const override { return {}; }
 };
 
 class StringAttribute : public BaseAttribute {
-public:
+   public:
     StringAttribute(const std::string &name) : BaseAttribute(name) {}
     StringAttribute(const std::string &name, const nb::dict &default_dict)
         : BaseAttribute(name, default_dict) {}
@@ -259,29 +255,27 @@ public:
         std::string low = def;
         std::transform(low.begin(), low.end(), low.begin(), ::tolower);
         if (low == "none" || low == "random") {
-            if (config.options.empty())
-                throw std::runtime_error("No options provided for " + name);
+            if (config.options.empty()) throw std::runtime_error("No options provided for " + name);
             static std::random_device rd;
             static std::mt19937 gen(rd());
-            std::uniform_int_distribution<> d(0, config.options.size()-1);
+            std::uniform_int_distribution<> d(0, config.options.size() - 1);
             return config.options[d(gen)];
         }
         return def;
     }
-    
+
     std::string mutate_value(const std::string &value, const AttributeConfig &config) const {
         static std::random_device rd;
         static std::mt19937 gen(rd());
         if (config.mutate_rate_s > 0 &&
             std::uniform_real_distribution<>(0.0, 1.0)(gen) < config.mutate_rate_s) {
-            if (config.options.empty())
-                throw std::runtime_error("No options provided for " + name);
-            std::uniform_int_distribution<> d(0, config.options.size()-1);
+            if (config.options.empty()) throw std::runtime_error("No options provided for " + name);
+            std::uniform_int_distribution<> d(0, config.options.size() - 1);
             return config.options[d(gen)];
         }
         return value;
     }
-    
+
     void validate(const AttributeConfig &config) const {
         std::string def = config.default_str;
         if (def != "none" && def != "random") {
@@ -290,13 +284,11 @@ public:
                 throw std::runtime_error("Invalid initial value " + def + " for " + name);
         }
     }
-    
+
     // NEW: Implement get_config_params
-    std::vector<ConfigParameter> get_config_params() const override {
-        return {};
-    }
+    std::vector<ConfigParameter> get_config_params() const override { return {}; }
 };
 
-} // namespace neat3p
+}  // namespace neat3p
 
-#endif // ATTRIBUTES_HPP
+#endif  // ATTRIBUTES_HPP

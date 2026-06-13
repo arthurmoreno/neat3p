@@ -45,7 +45,7 @@ class DefaultReproduction(DefaultClassConfig):
         new_genomes = {}
         for i in range(num_genomes):
             key = next(self.genome_indexer)
-            g = genome_type(key)
+            g = genome_type(key=key)
             g.configure_new(genome_config)
             new_genomes[key] = g
             self.ancestors[key] = tuple()
@@ -180,7 +180,7 @@ class DefaultReproduction(DefaultClassConfig):
                 # Note that if the parents are not distinct, crossover will produce a
                 # genetically identical clone of the parent (but with a different ID).
                 gid = next(self.genome_indexer)
-                child = config.genome_type(gid)
+                child = config.genome_type(key=gid)
                 child.configure_crossover(parent1, parent2, config.genome_config)
                 child.mutate(config.genome_config)
                 # TODO: if config.genome_config.feed_forward, no cycles should exist
