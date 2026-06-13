@@ -16,6 +16,11 @@ authors = [
 description = "Neat Python, Amplified by C++ Boost"
 readme = "README.md"
 requires-python = ">=3.12"
+dependencies = [
+    "numpy>=2.2.4",
+    "pydantic>=2.10",
+    "typing_extensions>=4.12",
+]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
@@ -27,11 +32,15 @@ classifiers = [
     "Topic :: Utilities",
 ]
 
+[project.optional-dependencies]
+nn = ["torch"]
+bench = ["neat3p[nn]", "gymnasium[classic-control,box2d]"]
+
 [project.urls]
 "Homepage" = "https://github.com/arthurmoreno/neat3p"
 
 [tool.scikit-build]
-cmake.verbose = true
+build.verbose = true
 cmake.args = [
     "-G", "Ninja",
     "-DCMAKE_CXX_FLAGS=-fdiagnostics-color=always",
@@ -49,6 +58,11 @@ include-package-data = true
 # This tells setuptools to include the header file from the install tree
 neat3p = ["include/neat3p/neat3p.hpp"]
 "" = ["*.hpp", "*.h"]
+
+[tool.pytest.ini_options]
+markers = [
+    "slow: benchmark tests that run a full NEAT training loop (deselect with -m 'not slow')",
+]
 
 [tool.ruff]
 line-length = 120

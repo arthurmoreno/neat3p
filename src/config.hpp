@@ -5,35 +5,36 @@
 #include <nanobind/nanobind.h>
 namespace nb = nanobind;
 
-#include <string>
-#include <vector>
-#include <optional>
-#include <variant>
-#include <unordered_map>
-#include <stdexcept>
-#include <sstream>
 #include <algorithm>
 #include <cctype>
 #include <iostream>
+#include <optional>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <unordered_map>
+#include <variant>
+#include <vector>
 
 // A variant type to hold a configuration value.
-using ConfigValue = std::variant<int, bool, float, std::string, std::vector<std::string>, nb::object>;
+using ConfigValue =
+    std::variant<int, bool, float, std::string, std::vector<std::string>, nb::object>;
 
 class ConfigParameter {
-public:
+   public:
     std::string name;
-    // This member holds a string (e.g. "int", "bool", "float", "list", "str") extracted from the Python type's __name__.
+    // This member holds a string (e.g. "int", "bool", "float", "list", "str") extracted from the
+    // Python type's __name__.
     std::string value_type;
     std::optional<ConfigValue> default_value;
 
     // Constructor accepts a Python type object for the value type.
-    ConfigParameter(const std::string &name, const nb::object &py_type, 
+    ConfigParameter(const std::string &name, const nb::object &py_type,
                     std::optional<ConfigValue> default_value = std::nullopt)
         : name(name),
           // Convert the Python type's __name__ to a std::string
           value_type(nb::cast<std::string>(nb::getattr(py_type, "__name__"))),
-          default_value(default_value)
-    {}
+          default_value(default_value) {}
 
     // Mimics Python's __repr__.
     std::string repr() const {
@@ -68,26 +69,21 @@ public:
             if (value_type == "int") {
                 nb::object result = config_parser.attr("getint")(section_str, name);
                 return nb::cast<int>(result);
-            } 
-            else if (value_type == "bool") {
+            } else if (value_type == "bool") {
                 nb::object result = config_parser.attr("getboolean")(section_str, name);
                 return nb::cast<bool>(result);
-            }
-            else if (value_type == "float") {
+            } else if (value_type == "float") {
                 nb::object result = config_parser.attr("getfloat")(section_str, name);
                 return nb::cast<float>(result);
-            }
-            else if (value_type == "list") {
+            } else if (value_type == "list") {
                 // config_parser.get(...) returns a string -> we split it
                 nb::object result = config_parser.attr("get")(section_str, name);
                 std::string s = nb::cast<std::string>(result);
                 return split(s);
-            }
-            else if (value_type == "str") {
+            } else if (value_type == "str") {
                 nb::object result = config_parser.attr("get")(section_str, name);
                 return nb::cast<std::string>(result);
-            }
-            else {
+            } else {
                 throw std::runtime_error("Unexpected configuration type: " + value_type);
             }
         } catch (const std::exception &e) {
@@ -103,7 +99,7 @@ public:
                 throw std::runtime_error("Missing configuration item: " + name);
             } else {
                 std::cerr << "Warning: Using default " << configValueToString(*default_value)
-                        << " for '" << name << "'\n";
+                          << " for '" << name << "'\n";
                 return *default_value;
             }
         }
@@ -123,19 +119,17 @@ public:
                 else if (lower == "false") {
                     std::cout << "HERE JUST BEFORE FALSE!" << std::endl;
                     return nb::bool_(false);
-                }
-                else
+                } else
                     throw std::runtime_error(name + " must be True or False");
-            }
-            else if (value_type == "float")
+            } else if (value_type == "float")
                 return std::stof(value_str);
             else if (value_type == "list")
                 return split(value_str);
             else
                 throw std::runtime_error("Unexpected configuration type: " + value_type);
         } catch (const std::exception &e) {
-            throw std::runtime_error("Error interpreting config item '" + name +
-                                    "' with value '" + value_str + "': " + e.what());
+            throw std::runtime_error("Error interpreting config item '" + name + "' with value '" +
+                                     value_str + "': " + e.what());
         }
     }
 
@@ -146,8 +140,7 @@ public:
             std::ostringstream oss;
             for (size_t i = 0; i < vec.size(); ++i) {
                 oss << vec[i];
-                if (i != vec.size() - 1)
-                    oss << " ";
+                if (i != vec.size() - 1) oss << " ";
             }
             return oss.str();
         } else {
@@ -155,31 +148,32 @@ public:
         }
     }
 
-private:
+   private:
     // Helper: converts a ConfigValue variant to a string.
     static std::string configValueToString(const ConfigValue &val) {
-        return std::visit([](auto &&arg) -> std::string {
-            using T = std::decay_t<decltype(arg)>;
-            if constexpr(std::is_same_v<T, int>) {
-                return std::to_string(arg);
-            } else if constexpr(std::is_same_v<T, bool>) {
-                return arg ? "True" : "False";
-            } else if constexpr(std::is_same_v<T, float>) {
-                return std::to_string(arg);
-            } else if constexpr(std::is_same_v<T, std::string>) {
-                return arg;
-            } else if constexpr(std::is_same_v<T, std::vector<std::string>>) {
-                std::ostringstream oss;
-                for (size_t i = 0; i < arg.size(); ++i) {
-                    oss << arg[i];
-                    if (i != arg.size() - 1)
-                        oss << " ";
+        return std::visit(
+            [](auto &&arg) -> std::string {
+                using T = std::decay_t<decltype(arg)>;
+                if constexpr (std::is_same_v<T, int>) {
+                    return std::to_string(arg);
+                } else if constexpr (std::is_same_v<T, bool>) {
+                    return arg ? "True" : "False";
+                } else if constexpr (std::is_same_v<T, float>) {
+                    return std::to_string(arg);
+                } else if constexpr (std::is_same_v<T, std::string>) {
+                    return arg;
+                } else if constexpr (std::is_same_v<T, std::vector<std::string>>) {
+                    std::ostringstream oss;
+                    for (size_t i = 0; i < arg.size(); ++i) {
+                        oss << arg[i];
+                        if (i != arg.size() - 1) oss << " ";
+                    }
+                    return oss.str();
+                } else {
+                    return "";
                 }
-                return oss.str();
-            } else {
-                return "";
-            }
-        }, val);
+            },
+            val);
     }
 
     // Helper: returns a lowercase copy of a string.
@@ -194,15 +188,12 @@ private:
         std::istringstream iss(s);
         std::vector<std::string> tokens;
         std::string token;
-        while (iss >> token)
-            tokens.push_back(token);
+        while (iss >> token) tokens.push_back(token);
         return tokens;
     }
 
     // Helper: wraps a string in quotes.
-    static std::string quote(const std::string &s) {
-        return "\"" + s + "\"";
-    }
+    static std::string quote(const std::string &s) { return "\"" + s + "\""; }
 };
 
-#endif // NEAT_CONFIG_HPP
+#endif  // NEAT_CONFIG_HPP

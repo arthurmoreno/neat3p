@@ -41,7 +41,7 @@ class TestCreateNew(unittest.TestCase):
         config.initial_connection = "unconnected"
         config.num_hidden = 0
 
-        g = neat3p.DefaultGenome(gid)
+        g = neat3p.DefaultGenome(key=gid)
         self.assertEqual(gid, g.key)
         g.configure_new(self.config.genome_config)
 
@@ -56,7 +56,7 @@ class TestCreateNew(unittest.TestCase):
         config.initial_connection = "unconnected"
         config.num_hidden = 2
 
-        g = neat3p.DefaultGenome(gid)
+        g = neat3p.DefaultGenome(key=gid)
         self.assertEqual(gid, g.key)
         g.configure_new(self.config.genome_config)
 
@@ -74,7 +74,7 @@ class TestCreateNew(unittest.TestCase):
         config.initial_connection = "fs_neat"
         config.num_hidden = 0
 
-        g = neat3p.DefaultGenome(gid)
+        g = neat3p.DefaultGenome(key=gid)
         self.assertEqual(gid, g.key)
         g.configure_new(config)
 
@@ -92,7 +92,7 @@ class TestCreateNew(unittest.TestCase):
         config.initial_connection = "fs_neat"
         config.num_hidden = 2
 
-        g = neat3p.DefaultGenome(gid)
+        g = neat3p.DefaultGenome(key=gid)
         self.assertEqual(gid, g.key)
         print("\nThis should output a warning:", file=sys.stderr)
         g.configure_new(config)  # TODO: Test for emitted warning
@@ -108,7 +108,7 @@ class TestCreateNew(unittest.TestCase):
         config.initial_connection = "fs_neat_nohidden"
         config.num_hidden = 2
 
-        g = neat3p.DefaultGenome(gid)
+        g = neat3p.DefaultGenome(key=gid)
         self.assertEqual(gid, g.key)
         g.configure_new(config)
 
@@ -123,7 +123,7 @@ class TestCreateNew(unittest.TestCase):
         config.initial_connection = "fs_neat_hidden"
         config.num_hidden = 2
 
-        g = neat3p.DefaultGenome(gid)
+        g = neat3p.DefaultGenome(key=gid)
         self.assertEqual(gid, g.key)
         g.configure_new(config)
 
@@ -141,7 +141,7 @@ class TestCreateNew(unittest.TestCase):
         config.initial_connection = "full"
         config.num_hidden = 0
 
-        g = neat3p.DefaultGenome(gid)
+        g = neat3p.DefaultGenome(key=gid)
         self.assertEqual(gid, g.key)
         g.configure_new(config)
 
@@ -163,7 +163,7 @@ class TestCreateNew(unittest.TestCase):
         config.initial_connection = "full"
         config.num_hidden = 2
 
-        g = neat3p.DefaultGenome(gid)
+        g = neat3p.DefaultGenome(key=gid)
         self.assertEqual(gid, g.key)
         print("\nThis should output a warning:", file=sys.stderr)
         g.configure_new(config)  # TODO: Test for emitted warning
@@ -192,7 +192,7 @@ class TestCreateNew(unittest.TestCase):
         config.initial_connection = "full_nodirect"
         config.num_hidden = 2
 
-        g = neat3p.DefaultGenome(gid)
+        g = neat3p.DefaultGenome(key=gid)
         self.assertEqual(gid, g.key)
         g.configure_new(config)
 
@@ -220,7 +220,7 @@ class TestCreateNew(unittest.TestCase):
         config.initial_connection = "full_direct"
         config.num_hidden = 2
 
-        g = neat3p.DefaultGenome(gid)
+        g = neat3p.DefaultGenome(key=gid)
         self.assertEqual(gid, g.key)
         g.configure_new(config)
 
@@ -252,7 +252,7 @@ class TestCreateNew(unittest.TestCase):
         config.connection_fraction = 0.5
         config.num_hidden = 0
 
-        g = neat3p.DefaultGenome(gid)
+        g = neat3p.DefaultGenome(key=gid)
         self.assertEqual(gid, g.key)
         g.configure_new(config)
 
@@ -271,7 +271,7 @@ class TestCreateNew(unittest.TestCase):
         config.connection_fraction = 0.5
         config.num_hidden = 2
 
-        g = neat3p.DefaultGenome(gid)
+        g = neat3p.DefaultGenome(key=gid)
         self.assertEqual(gid, g.key)
         print("\nThis should output a warning:", file=sys.stderr)
         g.configure_new(config)  # TODO: Test for emitted warning
@@ -288,7 +288,7 @@ class TestCreateNew(unittest.TestCase):
         config.connection_fraction = 0.5
         config.num_hidden = 2
 
-        g = neat3p.DefaultGenome(gid)
+        g = neat3p.DefaultGenome(key=gid)
         self.assertEqual(gid, g.key)
         g.configure_new(config)
 
@@ -307,7 +307,7 @@ class TestCreateNew(unittest.TestCase):
         config.connection_fraction = 0.5
         config.num_hidden = 2
 
-        g = neat3p.DefaultGenome(gid)
+        g = neat3p.DefaultGenome(key=gid)
         self.assertEqual(gid, g.key)
         g.configure_new(config)
 
@@ -341,7 +341,7 @@ class TestPruning(unittest.TestCase):
         config.initial_connection = "unconnected"
         config.num_hidden = 0
 
-        g = neat3p.DefaultGenome(gid)
+        g = neat3p.DefaultGenome(key=gid)
         g.configure_new(config)
 
         g_pruned = g.get_pruned_copy(config)
@@ -357,7 +357,7 @@ class TestPruning(unittest.TestCase):
         config.initial_connection = "unconnected"
         config.num_hidden = 0
 
-        g = neat3p.DefaultGenome(gid)
+        g = neat3p.DefaultGenome(key=gid)
         g.configure_new(config)
         g.add_connection(config, -1, 0, 1.0, True)
         g.add_connection(config, -2, 0, 1.0, True)
@@ -373,7 +373,7 @@ class TestPruning(unittest.TestCase):
         config.initial_connection = "unconnected"
         config.num_hidden = 0
 
-        g = neat3p.DefaultGenome(gid)
+        g = neat3p.DefaultGenome(key=gid)
         g.configure_new(config)
 
         new_node_id = config.get_new_node_key(g.nodes)
