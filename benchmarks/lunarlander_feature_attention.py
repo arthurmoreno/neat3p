@@ -36,7 +36,7 @@ from neat3p.nn.composite import NEATNetWithFeatureAttention
 from neat3p.nn.modules.attention import FeatureAttention
 from neat3p.nn.modules.encoders import SimpleEncoder
 
-_CFG = os.path.abspath(os.path.join(os.path.dirname(__file__), "../tests/benchmarks/configs/lunarlander.cfg"))
+_CFG = os.path.abspath(os.path.join(os.path.dirname(__file__), "configs/lunarlander.cfg"))
 
 # ---------------------------------------------------------------------------
 # Args

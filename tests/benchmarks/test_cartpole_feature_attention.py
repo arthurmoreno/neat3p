@@ -26,7 +26,7 @@ EVAL_EPISODES = 10
 SOLVE_EPISODES = 100
 SOLVE_THRESHOLD = 475.0
 
-_CFG_PATH = os.path.join(os.path.dirname(__file__), "configs", "cartpole.cfg")
+_CFG_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../benchmarks/configs/cartpole.cfg"))
 
 
 @pytest.mark.slow

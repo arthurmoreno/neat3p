@@ -10,19 +10,13 @@ Usage:
 """
 
 import os
-import sys
 
 import numpy as np
 import torch
 
-# ── make aievolution importable ───────────────────────────────────────────────
-_lifesim = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "lifesim")
-if _lifesim not in sys.path:
-    sys.path.insert(0, _lifesim)
-
-from aievolution.networks.activations import sigmoid_activation
-from aievolution.networks.cppn import create_cppn
-from aievolution.networks.recurrent_net import RecurrentNet
+from neat3p.nn.modules.activations import sigmoid_activation
+from neat3p.nn.phenotypes.cppn import create_cppn
+from neat3p.nn.phenotypes.recurrent_net import RecurrentNet
 
 import neat3p
 
@@ -102,7 +96,7 @@ def generate_cppn_fixture():
 
 
 if __name__ == "__main__":
-    print("Generating parity fixtures from aievolution.networks …")
+    print("Generating parity fixtures from neat3p.nn …")
     generate_recurrent_net_fixture()
     generate_cppn_fixture()
     print("Done.")

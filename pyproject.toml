@@ -34,7 +34,7 @@ classifiers = [
 
 [project.optional-dependencies]
 nn = ["torch"]
-bench = ["neat3p[nn]", "gymnasium[classic-control,box2d]"]
+bench = ["neat3p[nn]", "gymnasium[classic-control,box2d]", "psutil", "plotly", "pandas"]
 
 [project.urls]
 "Homepage" = "https://github.com/arthurmoreno/neat3p"
