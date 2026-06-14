@@ -21,26 +21,29 @@ Usage::
     from neat3p.nn.phenotypes.recurrent_net import RecurrentNet
     from neat3p.nn.composite import NEATNetWithFeatureAttention
 
-    # RecurrentNet
     result = run_neat_gym("CartPole-v1", cfg, 300, 10, seed=42, net_class=RecurrentNet)
-
-    # NEATNetWithFeatureAttention (feature_dim passed via net_kwargs)
-    result = run_neat_gym(
-        "CartPole-v1", cfg, 300, 10, seed=42,
-        net_class=NEATNetWithFeatureAttention,
-        net_kwargs={"feature_dim": 4},
-    )
-
     mean_reward = result.evaluate(n_episodes=100, seed=43)
+    rewards     = result.evaluate_rewards(n_episodes=100, seed=43)
+    gen_stats   = result.generation_stats   # list of per-generation dicts
 """
 
 import random
+import time
 
 import gymnasium as gym
 import numpy as np
 import torch
 
 import neat3p
+
+try:
+    import psutil as _psutil
+    _PROC = _psutil.Process()
+    _HAS_PSUTIL = True
+except ImportError:
+    _HAS_PSUTIL = False
+
+_HAS_CUDA = torch.cuda.is_available()
 
 
 def _seed_all(seed: int) -> None:
@@ -93,9 +96,24 @@ def _rollout(env, net, recurrent_style: bool) -> float:
 
 
 class GymEvalResult:
-    """Holds the winner genome + config so the caller can run final evaluation."""
+    """Winner genome + training metadata from a NEAT gym run."""
 
-    def __init__(self, winner, config, env_id, net_class, state_dim, action_dim, use_current_activs, net_kwargs):
+    def __init__(
+        self,
+        winner,
+        config,
+        env_id,
+        net_class,
+        state_dim,
+        action_dim,
+        use_current_activs,
+        net_kwargs,
+        stats_reporter,
+        wall_time_seconds: float,
+        rss_before_mb: float | None,
+        rss_after_mb: float | None,
+        peak_gpu_mb: float | None,
+    ):
         self.winner = winner
         self.config = config
         self.env_id = env_id
@@ -104,8 +122,49 @@ class GymEvalResult:
         self.action_dim = action_dim
         self.use_current_activs = use_current_activs
         self.net_kwargs = net_kwargs
+        self._stats_reporter = stats_reporter
+        self.wall_time_seconds = wall_time_seconds
+        self.rss_before_mb = rss_before_mb
+        self.rss_after_mb = rss_after_mb
+        self.peak_gpu_mb = peak_gpu_mb
 
-    def evaluate(self, n_episodes: int = 100, seed: int = 0) -> float:
+    @property
+    def training_rss_mb(self) -> float | None:
+        if self.rss_before_mb is None or self.rss_after_mb is None:
+            return None
+        return max(0.0, self.rss_after_mb - self.rss_before_mb)
+
+    @property
+    def winner_nodes(self) -> int:
+        return len(self.winner.nodes)
+
+    @property
+    def winner_connections(self) -> int:
+        return sum(1 for c in self.winner.connections.values() if c.enabled)
+
+    @property
+    def generation_stats(self) -> list[dict]:
+        """Per-generation list: generation, best, mean, std, species."""
+        out = []
+        for i, (best_genome, species_stats) in enumerate(
+            zip(
+                self._stats_reporter.most_fit_genomes,
+                self._stats_reporter.generation_statistics,
+            )
+        ):
+            all_fitnesses = [f for fitnesses in species_stats.values() for f in fitnesses]
+            out.append(
+                {
+                    "generation": i,
+                    "best": float(best_genome.fitness),
+                    "mean": float(np.mean(all_fitnesses)) if all_fitnesses else 0.0,
+                    "std": float(np.std(all_fitnesses)) if all_fitnesses else 0.0,
+                    "species": len(species_stats),
+                }
+            )
+        return out
+
+    def evaluate_rewards(self, n_episodes: int = 100, seed: int = 0) -> list[float]:
         _seed_all(seed)
         env = gym.make(self.env_id)
         recurrent_style = _is_recurrent_style(self.net_class)
@@ -120,7 +179,10 @@ class GymEvalResult:
         )
         rewards = [_rollout(env, net, recurrent_style) for _ in range(n_episodes)]
         env.close()
-        return float(np.mean(rewards))
+        return rewards
+
+    def evaluate(self, n_episodes: int = 100, seed: int = 0) -> float:
+        return float(np.mean(self.evaluate_rewards(n_episodes=n_episodes, seed=seed)))
 
 
 def run_neat_gym(
@@ -132,12 +194,11 @@ def run_neat_gym(
     net_class,
     use_current_activs: bool = True,
     net_kwargs: dict = None,
+    verbose: bool = True,
 ) -> GymEvalResult:
-    """Run NEAT on a Gymnasium env and return the winner wrapped in GymEvalResult.
+    """Run NEAT on a Gymnasium env and return a GymEvalResult.
 
-    Seeded: seeds Python/numpy/torch so runs are reproducible.
-    net_kwargs: extra kwargs forwarded to nn.Module-style nets (e.g. feature_dim=4).
-                Ignored for RecurrentNet-style nets.
+    verbose: if False, suppresses the StdOutReporter (useful for suite runs).
     """
     if net_kwargs is None:
         net_kwargs = {}
@@ -163,9 +224,36 @@ def run_neat_gym(
             genome.fitness = float(np.mean([_rollout(env, net, recurrent_style) for _ in range(episodes_per_genome)]))
 
     pop = neat3p.Population(config)
-    pop.add_reporter(neat3p.StdOutReporter(True))
-    pop.add_reporter(neat3p.StatisticsReporter())
+    if verbose:
+        pop.add_reporter(neat3p.StdOutReporter(True))
+    stats_reporter = neat3p.StatisticsReporter()
+    pop.add_reporter(stats_reporter)
+
+    rss_before_mb = _PROC.memory_info().rss / 1024**2 if _HAS_PSUTIL else None
+    if _HAS_CUDA:
+        torch.cuda.reset_peak_memory_stats()
+
+    t0 = time.perf_counter()
     winner = pop.run(eval_genomes, max_generations)
+    wall_time = time.perf_counter() - t0
+
+    rss_after_mb = _PROC.memory_info().rss / 1024**2 if _HAS_PSUTIL else None
+    peak_gpu_mb = torch.cuda.max_memory_allocated() / 1024**2 if _HAS_CUDA else None
+
     env.close()
 
-    return GymEvalResult(winner, config, env_id, net_class, state_dim, action_dim, use_current_activs, net_kwargs)
+    return GymEvalResult(
+        winner=winner,
+        config=config,
+        env_id=env_id,
+        net_class=net_class,
+        state_dim=state_dim,
+        action_dim=action_dim,
+        use_current_activs=use_current_activs,
+        net_kwargs=net_kwargs,
+        stats_reporter=stats_reporter,
+        wall_time_seconds=wall_time,
+        rss_before_mb=rss_before_mb,
+        rss_after_mb=rss_after_mb,
+        peak_gpu_mb=peak_gpu_mb,
+    )

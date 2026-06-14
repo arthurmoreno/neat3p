@@ -101,6 +101,8 @@ class NEATNetWithFeatureAttention(nn.Module):
         device_alias: str = "cuda",
         max_experience_size: int = 100,
         feature_dim=None,
+        encoder: nn.Module = None,
+        attn: nn.Module = None,
         encoder_state_dict=None,
         attn_state_dict=None,
         freeze_encoder: bool = False,
@@ -111,12 +113,16 @@ class NEATNetWithFeatureAttention(nn.Module):
           - int: use that value directly (e.g. feature_dim=4 for CartPole, no compression)
           - callable: called as feature_dim(state_dim) — e.g. lambda s: max(2, s // 2)
 
-        encoder_state_dict / attn_state_dict: load pre-trained weights into the encoder /
-          FeatureAttention before the NEAT controller is built. Pass state dicts from a
-          pre-training phase so the front-end starts from a meaningful representation.
+        encoder / attn: pre-built, shared front-end modules.  Pass these when running NEAT
+          evolution so every genome in every generation sees the same fixed projection.
+          The modules are moved to device and frozen automatically; feature_dim is inferred
+          from the encoder's output layer.  encoder_state_dict / freeze_encoder are ignored
+          when a pre-built encoder is supplied.
 
-        freeze_encoder: if True, sets requires_grad=False on all encoder + attention params
-          so Adam does not update them during joint training.
+        encoder_state_dict / attn_state_dict: load pre-trained weights into a freshly
+          constructed encoder / FeatureAttention (ignored when encoder/attn are supplied).
+
+        freeze_encoder: freeze a freshly constructed encoder + attention in-place.
         """
         super(NEATNetWithFeatureAttention, self).__init__()
         self.device = torch.device(device_alias)
@@ -125,33 +131,53 @@ class NEATNetWithFeatureAttention(nn.Module):
         self.action_dim = action_dim
         self.explore_rate = 0.125
 
-        if feature_dim is None:
-            self.feature_dim = max(1, state_dim // 10)
-        elif callable(feature_dim):
-            self.feature_dim = feature_dim(state_dim)
-        else:
-            self.feature_dim = int(feature_dim)
-
-        self.encoder = SimpleEncoder(self.state_dim, self.feature_dim, device=str(self.device))
-        self.feature_attn = FeatureAttention(input_dim=self.feature_dim, device=str(self.device))
-
-        if encoder_state_dict is not None:
-            self.encoder.load_state_dict(encoder_state_dict)
-        if attn_state_dict is not None:
-            self.feature_attn.load_state_dict(attn_state_dict)
-        if freeze_encoder:
+        if encoder is not None:
+            # Shared front-end path: move to device, freeze, skip compilation.
+            self.encoder = encoder.to(self.device).eval()
             for p in self.encoder.parameters():
                 p.requires_grad_(False)
+            # Infer feature_dim from the encoder's final linear layer.
+            self.feature_dim = next(
+                reversed([m for m in self.encoder.modules() if isinstance(m, nn.Linear)])
+            ).out_features
+            self.compiled_encoder = self.encoder
+        else:
+            if feature_dim is None:
+                self.feature_dim = max(1, state_dim // 10)
+            elif callable(feature_dim):
+                self.feature_dim = feature_dim(state_dim)
+            else:
+                self.feature_dim = int(feature_dim)
+            self.encoder = SimpleEncoder(self.state_dim, self.feature_dim, device=str(self.device))
+            if encoder_state_dict is not None:
+                self.encoder.load_state_dict(encoder_state_dict)
+            if freeze_encoder:
+                for p in self.encoder.parameters():
+                    p.requires_grad_(False)
+            self._compile_encoder()
+
+        if attn is not None:
+            self.feature_attn = attn.to(self.device).eval()
             for p in self.feature_attn.parameters():
                 p.requires_grad_(False)
+            self.compiled_feature_attn = self.feature_attn
+        else:
+            self.feature_attn = FeatureAttention(input_dim=self.feature_dim, device=str(self.device))
+            if attn_state_dict is not None:
+                self.feature_attn.load_state_dict(attn_state_dict)
+            if freeze_encoder:
+                for p in self.feature_attn.parameters():
+                    p.requires_grad_(False)
+            self._compile_feature_attn()
 
         self.net = RecurrentNet.create(genome, config)
-        self._compile_encoder()
-        self._compile_feature_attn()
 
-        self.optimizer = optim.Adam(
-            list(self.compiled_encoder.parameters()) + list(self.compiled_feature_attn.parameters()), lr=1e-3
+        owned_params = (
+            ([] if encoder is not None else list(self.compiled_encoder.parameters()))
+            + ([] if attn is not None else list(self.compiled_feature_attn.parameters()))
         )
+        if owned_params:
+            self.optimizer = optim.Adam(owned_params, lr=1e-3)
 
         self.states = torch.zeros((1, self.state_dim), device=self.device)
         self.actions = torch.zeros((1, 1), device=self.device)

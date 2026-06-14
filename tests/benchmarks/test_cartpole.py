@@ -27,7 +27,7 @@ EVAL_EPISODES = 10  # episodes per genome during training — 5 was too noisy (l
 SOLVE_EPISODES = 100  # episodes for the final solve assertion
 SOLVE_THRESHOLD = 475.0
 
-_CFG_PATH = os.path.join(os.path.dirname(__file__), "configs", "cartpole.cfg")
+_CFG_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../benchmarks/configs/cartpole.cfg"))
 
 
 # ---------------------------------------------------------------------------
