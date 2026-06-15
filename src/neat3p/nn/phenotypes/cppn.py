@@ -50,9 +50,9 @@ class Node:
             child_reprs.append("    <- {} * ".format(w) + repr(child).replace("\n", "\n    "))
         return header + "\n" + "\n".join(child_reprs)
 
-    def activate(self, xs, shape):
+    def activate(self, xs, shape, device=None):
         if not xs:
-            return torch.full(shape, self.bias)
+            return torch.full(shape, self.bias, device=device)
         inputs = [w * x for w, x in zip(self.weights, xs)]
         try:
             pre_activs = self.aggregation(inputs)
@@ -62,23 +62,25 @@ class Node:
             raise Exception("Failed to activate node {}".format(self.name))
         return activs
 
-    def get_activs(self, shape):
+    def get_activs(self, shape, device=None):
         if self.activs is None:
-            xs = [child.get_activs(shape) for child in self.children]
-            self.activs = self.activate(xs, shape)
+            xs = [child.get_activs(shape, device) for child in self.children]
+            self.activs = self.activate(xs, shape, device)
         return self.activs
 
     def __call__(self, **inputs):
         assert self.leaves is not None
         assert inputs
-        shape = list(inputs.values())[0].shape
+        first = list(inputs.values())[0]
+        shape = first.shape
+        device = first.device
         self.reset()
         for name in self.leaves.keys():
             assert inputs[name].shape == shape, "Wrong activs shape for leaf {}, {} != {}".format(
                 name, inputs[name].shape, shape
             )
             self.leaves[name].set_activs(inputs[name])
-        return self.get_activs(shape)
+        return self.get_activs(shape, device)
 
     def _prereset(self):
         if self.is_reset is None:
@@ -116,7 +118,7 @@ class Leaf:
     def set_activs(self, activs):
         self.activs = activs
 
-    def get_activs(self, shape):
+    def get_activs(self, shape, device=None):
         assert self.activs is not None, "Missing activs for leaf {}".format(self.name)
         assert self.activs.shape == shape, "Wrong activs shape for leaf {}, {} != {}".format(
             self.name, self.activs.shape, shape

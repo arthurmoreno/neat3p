@@ -5,7 +5,7 @@ and generate a self-contained Plotly HTML report.
 
 Usage:
     python benchmarks/suite.py                                 # all benchmarks, 3 runs each
-    python benchmarks/suite.py --benchmarks cartpole           # single benchmark
+    python benchmarks/suite.py --benchmarks cartpole_recurrent_net   # single benchmark
     python benchmarks/suite.py --runs 5                        # 5 runs each
     python benchmarks/suite.py --seeds 42,123,456              # explicit seeds (sets --runs too)
     python benchmarks/suite.py --output my_report.html         # custom output path
@@ -34,7 +34,7 @@ from plotly.subplots import make_subplots
 _HERE = os.path.dirname(os.path.abspath(__file__))
 
 REGISTRY: dict[str, str] = {
-    "cartpole": "cartpole.py",
+    "cartpole_recurrent_net": "cartpole_recurrent_net.py",
     "cartpole_feature_attention": "cartpole_feature_attention.py",
 }
 

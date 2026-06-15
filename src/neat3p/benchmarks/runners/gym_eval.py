@@ -152,7 +152,9 @@ class GymEvalResult:
                 self._stats_reporter.generation_statistics,
             )
         ):
-            all_fitnesses = [f for fitnesses in species_stats.values() for f in fitnesses]
+            # species_stats is {species_id: {genome_id: fitness}}; iterate the inner dict's
+            # VALUES (fitnesses), not its keys (genome ids) — see neat-python's get_fitness_stat.
+            all_fitnesses = [f for fitnesses in species_stats.values() for f in fitnesses.values()]
             out.append(
                 {
                     "generation": i,

@@ -1,24 +1,29 @@
 #!/usr/bin/env python3
 """
-CartPole-v1 NEAT benchmark — train then watch.
+CartPole-v1 NEAT benchmark — plain NEAT RecurrentNet controller.
+
+Exercises the shipping ``NEATRecurrentNet`` composite brain net (the game-contract
+wrapper around the RecurrentNet phenotype), NOT the raw phenotype — so the benchmark
+validates the same class the game would plug in.
 
 Usage:
-    python benchmarks/cartpole.py             # train + render winner
-    python benchmarks/cartpole.py --episodes 3
-    python benchmarks/cartpole.py --no-render
+    python benchmarks/cartpole_recurrent_net.py             # train + render winner
+    python benchmarks/cartpole_recurrent_net.py --episodes 3
+    python benchmarks/cartpole_recurrent_net.py --no-render
 """
 
 import os
 
 import gymnasium as gym
 import numpy as np
+import torch
 
 from neat3p.benchmarks.runners.gym_eval import run_neat_gym
-from neat3p.nn.phenotypes.recurrent_net import RecurrentNet
+from neat3p.nn.composite import NEATRecurrentNet
 
 _CFG = os.path.abspath(os.path.join(os.path.dirname(__file__), "configs/cartpole.cfg"))
 
-BENCHMARK_NAME = "cartpole"
+BENCHMARK_NAME = "cartpole_recurrent_net"
 SOLVE_THRESHOLD = 475.0
 
 
@@ -36,7 +41,7 @@ def run_benchmark(
         max_generations=generations,
         episodes_per_genome=episodes_per_genome,
         seed=seed,
-        net_class=RecurrentNet,
+        net_class=NEATRecurrentNet,
         verbose=verbose,
     )
 
@@ -72,7 +77,7 @@ def main():
     parser.add_argument("--no-render", action="store_true")
     args = parser.parse_args()
 
-    print(f"Training on CartPole-v1 (seed={args.seed}, max_generations={args.generations})...")
+    print(f"Training on CartPole-v1 with NEATRecurrentNet (seed={args.seed}, max_generations={args.generations})...")
 
     result = run_neat_gym(
         env_id="CartPole-v1",
@@ -80,7 +85,7 @@ def main():
         max_generations=args.generations,
         episodes_per_genome=args.episodes_per_genome,
         seed=args.seed,
-        net_class=RecurrentNet,
+        net_class=NEATRecurrentNet,
         verbose=True,
     )
     rewards = result.evaluate_rewards(n_episodes=100, seed=args.seed + 1)
@@ -96,15 +101,18 @@ def main():
     if not args.no_render:
         print(f"\nRendering {args.episodes} episode(s) — close the window between runs...")
         env = gym.make("CartPole-v1", render_mode="human")
-        net = RecurrentNet.create(result.winner, result.config, batch_size=1, use_current_activs=True)
+        state_dim = env.observation_space.shape[0]
+        action_dim = env.action_space.n
+        net = NEATRecurrentNet(result.winner, state_dim, action_dim, result.config)
         for ep in range(args.episodes):
             obs, _ = env.reset()
             net.reset(batch_size=1)
             total = 0.0
             terminated = truncated = False
             while not (terminated or truncated):
-                out = net.activate([obs.tolist()])
-                action = int(out[0].argmax().item())
+                obs_t = torch.tensor(obs, dtype=torch.float32).unsqueeze(0)
+                out = net(obs_t)
+                action = int(out.argmax(dim=1).item())
                 obs, reward, terminated, truncated, _ = env.step(action)
                 total += float(reward)
             print(f"  Episode {ep + 1}: reward={total:.0f}")

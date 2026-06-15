@@ -1,0 +1,4 @@
+# Training run artifacts (winners, packages, reports, logs) are local-only.
+# Keep the directory in the repo (so default output paths work) but ignore its contents.
+*
+!.gitignore
