@@ -64,10 +64,15 @@ def _pretrain_frontend(env_id, device, pretrain_episodes, pretrain_epochs, pretr
     loader = torch.utils.data.DataLoader(
         torch.utils.data.TensorDataset(obs_tensor), batch_size=pretrain_batch, shuffle=True
     )
-    if verbose:
-        print(f"  Pre-training autoencoder ({STATE_DIM}->{FEATURE_DIM}->{STATE_DIM}) on {len(obs_tensor)} obs...")
+    from tqdm.auto import tqdm as _tqdm
+
     encoder.train(); attn.train(); decoder.train()
-    for epoch in range(pretrain_epochs):
+    # Live per-epoch loss bar so encoder convergence is visible even under the suite (its real-time
+    # postfix shows each epoch's recon loss — a healthy curve falls and settles above ~0; ~0
+    # instantly = collapse, flat-high = it never captured the input).
+    ebar = _tqdm(range(pretrain_epochs), desc=f"pretrain {STATE_DIM}->{FEATURE_DIM}", position=1, leave=False)
+    epoch_loss = 0.0
+    for epoch in ebar:
         epoch_loss = 0.0
         for (batch,) in loader:
             optimizer.zero_grad()
@@ -75,8 +80,8 @@ def _pretrain_frontend(env_id, device, pretrain_episodes, pretrain_epochs, pretr
             loss.backward()
             optimizer.step()
             epoch_loss += loss.item()
-        if verbose and ((epoch + 1) % 20 == 0 or epoch == 0):
-            print(f"  epoch {epoch + 1:>4}/{pretrain_epochs}  loss={epoch_loss / len(loader):.5f}")
+        ebar.set_postfix(loss=f"{epoch_loss / len(loader):.5f}", refresh=False)
+    ebar.close()
     final_loss = epoch_loss / len(loader)
     encoder.eval(); attn.eval()
     # Always surface a one-line summary (visible even under the suite's verbose=False).
@@ -115,6 +120,8 @@ def run_benchmark(
     progress: bool = False,
     progress_desc: str = "",
     progress_position: int = 0,
+    eval_strategy: str = "per_generation",
+    validation_episodes: int = 0,
     pretrain: bool = True,
     pretrain_episodes: int = 250,
     pretrain_epochs: int = 100,
@@ -139,6 +146,8 @@ def run_benchmark(
         progress=progress,
         progress_desc=progress_desc,
         progress_position=progress_position,
+        eval_strategy=eval_strategy,
+        validation_episodes=validation_episodes,
     )
     rewards = result.evaluate_rewards(n_episodes=eval_episodes, seed=seed + 1)
     gen_stats = result.generation_stats
@@ -155,6 +164,7 @@ def run_benchmark(
         "benchmark_name": BENCHMARK_NAME,
         "env_id": env_id,
         "winner_path": winner_path,
+        "validation_stats": result.validation_stats,
         "seed": seed,
         "solve_generation": solve_gen,
         "total_generations": len(gen_stats),

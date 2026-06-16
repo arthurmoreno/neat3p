@@ -64,11 +64,18 @@ def main():
     parser.add_argument("--eval-episodes", type=int, default=20, help="Episodes for final winner eval (default: 20).")
     parser.add_argument("--pretrain-episodes", type=int, default=None, help="feature_attention: encoder pretrain episodes")
     parser.add_argument("--pretrain-epochs", type=int, default=None, help="feature_attention: encoder pretrain epochs")
-    parser.add_argument("--no-scent", action="store_true", help="Use the sparse VoxelForage-NoScent-v0 variant.")
+    parser.add_argument("--no-scent", action="store_true", help="Use the sparse (no scent gradient) variant.")
+    parser.add_argument("--shaped", action="store_true", help="Use the dense shaped-reward variant (recommended).")
+    parser.add_argument(
+        "--eval-strategy", choices=["per_generation", "fixed", "random"], default="per_generation",
+        help="World-sampling strategy (see EVALUATION_STRATEGIES.md). Default: per_generation.",
+    )
+    parser.add_argument("--validation-episodes", type=int, default=10,
+                        help="Held-out worlds to score the champion on each generation (0 = off).")
     parser.add_argument("--output", type=str, default="voxel_forage_report.html")
     args = parser.parse_args()
 
-    env_id = "VoxelForage-NoScent-v0" if args.no_scent else "VoxelForage-v0"
+    env_id = "VoxelForage" + ("-NoScent" if args.no_scent else "") + ("-Shaped" if args.shaped else "") + "-v0"
     seeds = [int(s) for s in args.seeds.split(",")] if args.seeds else list(range(42, 42 + args.runs))
 
     print("=" * 64)
@@ -77,6 +84,7 @@ def main():
     print(f"  env        : {env_id}")
     print(f"  seeds      : {seeds}")
     print(f"  budget     : {args.generations} gens × {args.episodes_per_genome} eps/genome")
+    print(f"  eval       : {args.eval_strategy}  | validation worlds: {args.validation_episodes}")
     print(f"  output     : {args.output}")
     print("=" * 64)
 
@@ -104,6 +112,8 @@ def main():
                 progress=True,
                 progress_desc=f"{net} s{seed}",
                 progress_position=1,
+                eval_strategy=args.eval_strategy,
+                validation_episodes=args.validation_episodes,
             )
             if args.pretrain_episodes is not None:
                 kwargs["pretrain_episodes"] = args.pretrain_episodes

@@ -68,12 +68,15 @@ def run_benchmark(
     progress: bool = False,
     progress_desc: str = "",
     progress_position: int = 0,
+    eval_strategy: str = "per_generation",
+    validation_episodes: int = 0,
 ) -> dict:
     result = run_neat_gym(
         env_id=env_id, config_path=_CFG, max_generations=generations,
         episodes_per_genome=episodes_per_genome, seed=seed,
         net_class=VoxelForageAdaptiveNet, verbose=verbose,
         progress=progress, progress_desc=progress_desc, progress_position=progress_position,
+        eval_strategy=eval_strategy, validation_episodes=validation_episodes,
     )
     rewards = result.evaluate_rewards(n_episodes=eval_episodes, seed=seed + 1)
     gen_stats = result.generation_stats
@@ -85,6 +88,7 @@ def run_benchmark(
         "benchmark_name": BENCHMARK_NAME,
         "env_id": env_id,
         "winner_path": winner_path,
+        "validation_stats": result.validation_stats,
         "seed": seed,
         "solve_generation": solve_gen,
         "total_generations": len(gen_stats),

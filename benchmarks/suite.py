@@ -328,11 +328,42 @@ def _fig_mean_fitness_bands(all_results: list[dict], colors: dict[str, str]) -> 
     return fig
 
 
+def _fig_validation(all_results: list[dict], colors: dict[str, str]):
+    """Held-out validation curve — champion mean reward on a FIXED world set per generation.
+
+    This is the clean progress signal: unlike training fitness (whose worlds change each
+    generation), the validation worlds are fixed, so the curve reflects real policy improvement.
+    """
+    groups = _group_by_name(all_results)
+    if not any(r.get("validation_stats") for r in all_results):
+        return None
+    fig = go.Figure()
+    for name, group in groups.items():
+        series = [[s["val_mean"] for s in r.get("validation_stats", [])] for r in group]
+        series = [s for s in series if len(s) >= 2]
+        if not series:
+            continue
+        min_len = min(len(s) for s in series)
+        mu = np.mean([s[:min_len] for s in series], axis=0)
+        fig.add_trace(go.Scatter(
+            x=list(range(min_len)), y=mu.tolist(), mode="lines",
+            line=dict(color=colors[name], width=2), name=name, legendgroup=name,
+        ))
+    fig.update_layout(
+        title="Held-out validation — champion mean reward per generation (clean progress signal)",
+        xaxis_title="Generation", yaxis_title="Held-out mean reward",
+        height=400, template="plotly_dark",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02),
+    )
+    return fig
+
+
 def build_report(all_results: list[dict], benchmark_names: list[str], output_path: str) -> None:
     colors = {name: _PALETTE[i % len(_PALETTE)] for i, name in enumerate(benchmark_names)}
 
     summary_html = _summary_table(all_results, {})
     fig_convergence = _fig_convergence(all_results, colors)
+    fig_validation = _fig_validation(all_results, colors)
     fig_mean_bands = _fig_mean_fitness_bands(all_results, colors)
     fig_boxes = _fig_boxes(all_results, colors)
     fig_complexity = _fig_network_complexity(all_results, colors)
@@ -372,10 +403,13 @@ def build_report(all_results: list[dict], benchmark_names: list[str], output_pat
   <h2>Summary</h2>
   {summary_html}
 
+  <h2>Held-out validation — clean progress signal</h2>
+  <div class="chart-wrap">{_to_div(fig_validation)}</div>
+
   <h2>Convergence — best fitness per generation</h2>
   <div class="chart-wrap">{_to_div(fig_convergence)}</div>
 
-  <h2>Population mean fitness ± std across runs</h2>
+  <h2>Population mean fitness ± std across runs (training worlds — jittery by design)</h2>
   <div class="chart-wrap">{_to_div(fig_mean_bands)}</div>
 
   <h2>Distributions across runs</h2>

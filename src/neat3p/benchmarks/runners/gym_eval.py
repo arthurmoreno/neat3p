@@ -66,6 +66,25 @@ class _GenerationProgress(neat3p.reporting.BaseReporter):
             self.bar = None
 
 
+class _ValidationReporter(neat3p.reporting.BaseReporter):
+    """Each generation, score the champion on a FIXED held-out world set — the clean,
+    jitter-free progress curve (training fitness moves with each generation's worlds)."""
+
+    def __init__(self, make_net, env, recurrent_style, val_seeds):
+        self._make_net = make_net
+        self._env = env
+        self._recurrent_style = recurrent_style
+        self._val_seeds = val_seeds
+        self.history = []
+        self._gen = -1
+
+    def post_evaluate(self, config, population, species, best_genome):
+        self._gen += 1
+        net = self._make_net(best_genome, config)
+        vals = [_rollout(self._env, net, self._recurrent_style, seed=s) for s in self._val_seeds]
+        self.history.append({"generation": self._gen, "val_mean": float(np.mean(vals))})
+
+
 def _seed_all(seed: int) -> None:
     random.seed(seed)
     np.random.seed(seed)
@@ -138,6 +157,7 @@ class GymEvalResult:
         rss_before_mb: float | None,
         rss_after_mb: float | None,
         peak_gpu_mb: float | None,
+        validation_stats: list | None = None,
     ):
         self.winner = winner
         self.config = config
@@ -152,6 +172,9 @@ class GymEvalResult:
         self.rss_before_mb = rss_before_mb
         self.rss_after_mb = rss_after_mb
         self.peak_gpu_mb = peak_gpu_mb
+        # Per-generation champion performance on a FIXED held-out world set (the clean progress
+        # metric, free of the per-generation world-difficulty jitter of training fitness).
+        self.validation_stats = validation_stats or []
 
     @property
     def training_rss_mb(self) -> float | None:
@@ -228,12 +251,23 @@ def run_neat_gym(
     progress: bool = False,
     progress_desc: str = "",
     progress_position: int = 0,
+    eval_strategy: str = "per_generation",
+    validation_episodes: int = 0,
 ) -> GymEvalResult:
     """Run NEAT on a Gymnasium env and return a GymEvalResult.
 
-    Each generation draws ``episodes_per_genome`` (= K) seeded worlds that are shared by every
-    genome in that generation (fair ranking) and resampled the next generation (so evolution
-    can't overfit a fixed layout). The winner is scored on a separate held-out seed stream.
+    ``eval_strategy`` controls how the K = ``episodes_per_genome`` worlds a genome is scored on
+    are chosen (see EVALUATION_STRATEGIES.md):
+      - "per_generation" (default): K seeded worlds shared by every genome in a generation,
+        resampled each generation. Fair ranking + can't overfit a fixed layout.
+      - "fixed": the same K seeded worlds for the whole run. Stable fitness → cleanest slope,
+        but can overfit those K worlds (validate on held-out!).
+      - "random": each rollout draws a fresh unseeded world (the original, unfair behaviour —
+        between-genome luck; kept for comparison).
+
+    ``validation_episodes`` (> 0): each generation, score the champion on this many FIXED
+    held-out worlds and record it in ``result.validation_stats`` — the clean progress curve.
+    The winner is always scored on a separate held-out seed stream by ``evaluate_rewards``.
 
     verbose: if False, suppresses the StdOutReporter (useful for suite runs).
     """
@@ -257,16 +291,22 @@ def run_neat_gym(
 
     gen_counter = [0]
 
+    def _world_seeds(g):
+        # See EVALUATION_STRATEGIES.md for the trade-offs of each strategy.
+        if eval_strategy == "random":
+            return None  # fresh unseeded world per rollout (between-genome luck)
+        if eval_strategy == "fixed":
+            return [_seed_for(seed, i) for i in range(episodes_per_genome)]
+        return [_seed_for(seed, g * episodes_per_genome + i) for i in range(episodes_per_genome)]  # per_generation
+
     def eval_genomes(genomes, cfg):
-        # K = episodes_per_genome worlds, FIXED within this generation so every genome is
-        # ranked on identical layouts (removes between-genome luck), and RESAMPLED every
-        # generation so the population sees hundreds of layouts over a run and cannot overfit
-        # any fixed one — it must learn a seed-independent policy.
-        g = gen_counter[0]
-        world_seeds = [_seed_for(seed, g * episodes_per_genome + i) for i in range(episodes_per_genome)]
+        world_seeds = _world_seeds(gen_counter[0])
         for _gid, genome in genomes:
             net = _make_net(net_class, genome, cfg, state_dim, action_dim, use_current_activs, net_kwargs)
-            genome.fitness = float(np.mean([_rollout(env, net, recurrent_style, seed=s) for s in world_seeds]))
+            if world_seeds is None:
+                genome.fitness = float(np.mean([_rollout(env, net, recurrent_style) for _ in range(episodes_per_genome)]))
+            else:
+                genome.fitness = float(np.mean([_rollout(env, net, recurrent_style, seed=s) for s in world_seeds]))
         gen_counter[0] += 1
 
     pop = neat3p.Population(config)
@@ -278,6 +318,14 @@ def run_neat_gym(
     if progress:
         progress_reporter = _GenerationProgress(max_generations, progress_desc, progress_position)
         pop.add_reporter(progress_reporter)
+    validation_reporter = None
+    if validation_episodes > 0:
+        # Held-out worlds: a seed stream distinct from training (seed) and final eval (seed+1).
+        val_seeds = [_seed_for(seed + 4242, i) for i in range(validation_episodes)]
+        def _make(genome, cfg):
+            return _make_net(net_class, genome, cfg, state_dim, action_dim, use_current_activs, net_kwargs)
+        validation_reporter = _ValidationReporter(_make, env, recurrent_style, val_seeds)
+        pop.add_reporter(validation_reporter)
 
     rss_before_mb = _PROC.memory_info().rss / 1024**2 if _HAS_PSUTIL else None
     if _HAS_CUDA:
@@ -309,4 +357,5 @@ def run_neat_gym(
         rss_before_mb=rss_before_mb,
         rss_after_mb=rss_after_mb,
         peak_gpu_mb=peak_gpu_mb,
+        validation_stats=(validation_reporter.history if validation_reporter is not None else []),
     )

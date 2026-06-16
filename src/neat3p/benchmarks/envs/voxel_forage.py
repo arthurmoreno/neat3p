@@ -70,9 +70,13 @@ class VoxelForageEnv(gym.Env):
         scent_scale: float = 2.5,
         max_steps: int = 160,
         scent: bool = True,
+        reward_shaping: float = 0.0,
     ):
         super().__init__()
         self.use_scent = scent
+        # Dense potential-based shaping weight: per step, reward += reward_shaping * scent[pos].
+        # 0.0 = sparse (food-only). Kept small so the eat reward stays dominant (no camping exploit).
+        self.reward_shaping = reward_shaping
         self.W, self.H, self.D = size
         self.n_food = n_food
         self.n_hazard = n_hazard
@@ -191,11 +195,16 @@ class VoxelForageEnv(gym.Env):
 
         reward = 0.0
         x, y, z = self.pos
+        # Dense shaping: small reward for occupying high-scent (near-food) cells, BEFORE the eat
+        # recompute so it reflects proximity to remaining food. Uses scent even in no-scent obs
+        # mode (reward shaping may use privileged info the agent doesn't observe).
+        if self.reward_shaping:
+            reward += self.reward_shaping * float(self.scent[x, y, z])
         if self.food[x, y, z]:
             self.food[x, y, z] = False
             self.energy += self.food_value
             self.collected += self.food_value
-            reward = self.food_value
+            reward += self.food_value
             self._recompute_scent()
         if self.hazard[x, y, z]:
             self.energy -= self.hazard_damage
