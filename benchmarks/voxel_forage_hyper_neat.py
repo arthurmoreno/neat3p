@@ -61,11 +61,15 @@ def run_benchmark(
     verbose: bool = True,
     env_id: str = ENV_ID,
     save_dir: str = None,
+    progress: bool = False,
+    progress_desc: str = "",
+    progress_position: int = 0,
 ) -> dict:
     result = run_neat_gym(
         env_id=env_id, config_path=_CFG, max_generations=generations,
         episodes_per_genome=episodes_per_genome, seed=seed,
         net_class=VoxelForageHyperNEATNet, verbose=verbose,
+        progress=progress, progress_desc=progress_desc, progress_position=progress_position,
     )
     rewards = result.evaluate_rewards(n_episodes=eval_episodes, seed=seed + 1)
     gen_stats = result.generation_stats

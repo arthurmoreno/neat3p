@@ -77,7 +77,16 @@ def _pretrain_frontend(env_id, device, pretrain_episodes, pretrain_epochs, pretr
             epoch_loss += loss.item()
         if verbose and ((epoch + 1) % 20 == 0 or epoch == 0):
             print(f"  epoch {epoch + 1:>4}/{pretrain_epochs}  loss={epoch_loss / len(loader):.5f}")
+    final_loss = epoch_loss / len(loader)
     encoder.eval(); attn.eval()
+    # Always surface a one-line summary (visible even under the suite's verbose=False).
+    # Route through tqdm.write when available so it doesn't corrupt an active progress bar.
+    msg = (
+        f"  [pretrain] encoder {STATE_DIM}->{FEATURE_DIM}: {len(obs_tensor)} obs, "
+        f"{pretrain_epochs} epochs, final recon loss={final_loss:.5f}"
+    )
+    from tqdm.auto import tqdm as _tqdm
+    _tqdm.write(msg)
     return encoder, attn
 
 
@@ -103,9 +112,12 @@ def run_benchmark(
     verbose: bool = True,
     env_id: str = ENV_ID,
     save_dir: str = None,
+    progress: bool = False,
+    progress_desc: str = "",
+    progress_position: int = 0,
     pretrain: bool = True,
-    pretrain_episodes: int = 40,
-    pretrain_epochs: int = 40,
+    pretrain_episodes: int = 250,
+    pretrain_epochs: int = 100,
     pretrain_batch: int = 256,
     pretrain_lr: float = 1e-3,
 ) -> dict:
@@ -124,6 +136,9 @@ def run_benchmark(
         net_class=NEATNetWithFeatureAttention,
         net_kwargs={"encoder": encoder, "attn": attn},
         verbose=verbose,
+        progress=progress,
+        progress_desc=progress_desc,
+        progress_position=progress_position,
     )
     rewards = result.evaluate_rewards(n_episodes=eval_episodes, seed=seed + 1)
     gen_stats = result.generation_stats
@@ -180,6 +195,8 @@ def main():
     parser.add_argument("--generations", type=int, default=60)
     parser.add_argument("--episodes-per-genome", type=int, default=2)
     parser.add_argument("--no-pretrain", action="store_true")
+    parser.add_argument("--pretrain-episodes", type=int, default=250)
+    parser.add_argument("--pretrain-epochs", type=int, default=100)
     parser.add_argument("--no-scent", action="store_true")
     parser.add_argument("--render", action="store_true")
     parser.add_argument("--episodes", type=int, default=3)
@@ -190,7 +207,10 @@ def main():
     torch.manual_seed(args.seed)
     print(f"Training {env_id} with NEATNetWithFeatureAttention (seed={args.seed}, gens={args.generations})...")
 
-    encoder, attn = _build_frontend(env_id, not args.no_pretrain, args.seed, True, 40, 40, 256, 1e-3)
+    encoder, attn = _build_frontend(
+        env_id, not args.no_pretrain, args.seed, True,
+        args.pretrain_episodes, args.pretrain_epochs, 256, 1e-3,
+    )
     result = run_neat_gym(
         env_id=env_id, config_path=_CFG, max_generations=args.generations,
         episodes_per_genome=args.episodes_per_genome, seed=args.seed,

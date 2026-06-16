@@ -43,13 +43,38 @@ try:
 except ImportError:
     _HAS_PSUTIL = False
 
+from tqdm.auto import tqdm as _tqdm
+
 _HAS_CUDA = torch.cuda.is_available()
+
+
+class _GenerationProgress(neat3p.reporting.BaseReporter):
+    """Advances a tqdm bar once per generation, showing live best/mean fitness."""
+
+    def __init__(self, total, desc, position):
+        self.bar = _tqdm(total=total, desc=desc, position=position, leave=False, dynamic_ncols=True)
+
+    def post_evaluate(self, config, population, species, best_genome):
+        fits = [g.fitness for g in population.values() if g.fitness is not None]
+        mean = float(np.mean(fits)) if fits else 0.0
+        self.bar.set_postfix(best=f"{best_genome.fitness:.0f}", mean=f"{mean:.1f}", refresh=False)
+        self.bar.update(1)
+
+    def close(self):
+        if self.bar is not None:
+            self.bar.close()
+            self.bar = None
 
 
 def _seed_all(seed: int) -> None:
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
+
+
+def _seed_for(base: int, idx: int) -> int:
+    """Deterministic per-(base, idx) world seed. Distinct bases give disjoint streams."""
+    return int((int(base) * 1_000_003 + int(idx)) % (2**31 - 1))
 
 
 def _is_recurrent_style(net_class) -> bool:
@@ -62,8 +87,8 @@ def _make_net(net_class, genome, config, state_dim, action_dim, use_current_acti
     return net_class(genome, state_dim, action_dim, config, **net_kwargs)
 
 
-def _rollout_recurrent(env, net) -> float:
-    obs, _ = env.reset()
+def _rollout_recurrent(env, net, seed=None) -> float:
+    obs, _ = env.reset(seed=seed)
     net.reset(batch_size=1)
     total = 0.0
     terminated = truncated = False
@@ -75,8 +100,8 @@ def _rollout_recurrent(env, net) -> float:
     return total
 
 
-def _rollout_module(env, net) -> float:
-    obs, _ = env.reset()
+def _rollout_module(env, net, seed=None) -> float:
+    obs, _ = env.reset(seed=seed)
     net.reset(batch_size=1)
     total = 0.0
     terminated = truncated = False
@@ -89,10 +114,10 @@ def _rollout_module(env, net) -> float:
     return total
 
 
-def _rollout(env, net, recurrent_style: bool) -> float:
+def _rollout(env, net, recurrent_style: bool, seed=None) -> float:
     if recurrent_style:
-        return _rollout_recurrent(env, net)
-    return _rollout_module(env, net)
+        return _rollout_recurrent(env, net, seed)
+    return _rollout_module(env, net, seed)
 
 
 class GymEvalResult:
@@ -179,7 +204,10 @@ class GymEvalResult:
             self.use_current_activs,
             self.net_kwargs,
         )
-        rewards = [_rollout(env, net, recurrent_style) for _ in range(n_episodes)]
+        # Fixed, reproducible held-out worlds (a stream distinct from the training worlds,
+        # which are keyed on the run seed) — measures true generalization of the winner.
+        ep_seeds = [_seed_for(seed, i) for i in range(n_episodes)]
+        rewards = [_rollout(env, net, recurrent_style, seed=s) for s in ep_seeds]
         env.close()
         return rewards
 
@@ -197,8 +225,15 @@ def run_neat_gym(
     use_current_activs: bool = True,
     net_kwargs: dict = None,
     verbose: bool = True,
+    progress: bool = False,
+    progress_desc: str = "",
+    progress_position: int = 0,
 ) -> GymEvalResult:
     """Run NEAT on a Gymnasium env and return a GymEvalResult.
+
+    Each generation draws ``episodes_per_genome`` (= K) seeded worlds that are shared by every
+    genome in that generation (fair ranking) and resampled the next generation (so evolution
+    can't overfit a fixed layout). The winner is scored on a separate held-out seed stream.
 
     verbose: if False, suppresses the StdOutReporter (useful for suite runs).
     """
@@ -220,16 +255,29 @@ def run_neat_gym(
     action_dim = env.action_space.n
     recurrent_style = _is_recurrent_style(net_class)
 
+    gen_counter = [0]
+
     def eval_genomes(genomes, cfg):
+        # K = episodes_per_genome worlds, FIXED within this generation so every genome is
+        # ranked on identical layouts (removes between-genome luck), and RESAMPLED every
+        # generation so the population sees hundreds of layouts over a run and cannot overfit
+        # any fixed one — it must learn a seed-independent policy.
+        g = gen_counter[0]
+        world_seeds = [_seed_for(seed, g * episodes_per_genome + i) for i in range(episodes_per_genome)]
         for _gid, genome in genomes:
             net = _make_net(net_class, genome, cfg, state_dim, action_dim, use_current_activs, net_kwargs)
-            genome.fitness = float(np.mean([_rollout(env, net, recurrent_style) for _ in range(episodes_per_genome)]))
+            genome.fitness = float(np.mean([_rollout(env, net, recurrent_style, seed=s) for s in world_seeds]))
+        gen_counter[0] += 1
 
     pop = neat3p.Population(config)
     if verbose:
         pop.add_reporter(neat3p.StdOutReporter(True))
     stats_reporter = neat3p.StatisticsReporter()
     pop.add_reporter(stats_reporter)
+    progress_reporter = None
+    if progress:
+        progress_reporter = _GenerationProgress(max_generations, progress_desc, progress_position)
+        pop.add_reporter(progress_reporter)
 
     rss_before_mb = _PROC.memory_info().rss / 1024**2 if _HAS_PSUTIL else None
     if _HAS_CUDA:
@@ -238,6 +286,9 @@ def run_neat_gym(
     t0 = time.perf_counter()
     winner = pop.run(eval_genomes, max_generations)
     wall_time = time.perf_counter() - t0
+
+    if progress_reporter is not None:
+        progress_reporter.close()
 
     rss_after_mb = _PROC.memory_info().rss / 1024**2 if _HAS_PSUTIL else None
     peak_gpu_mb = torch.cuda.max_memory_allocated() / 1024**2 if _HAS_CUDA else None

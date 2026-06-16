@@ -41,6 +41,9 @@ def run_benchmark(
     verbose: bool = True,
     env_id: str = ENV_ID,
     save_dir: str = None,
+    progress: bool = False,
+    progress_desc: str = "",
+    progress_position: int = 0,
 ) -> dict:
     """Run one VoxelForage NEAT trial. Returns a suite-compatible stats dict."""
     result = run_neat_gym(
@@ -51,6 +54,9 @@ def run_benchmark(
         seed=seed,
         net_class=NEATRecurrentNet,
         verbose=verbose,
+        progress=progress,
+        progress_desc=progress_desc,
+        progress_position=progress_position,
     )
 
     rewards = result.evaluate_rewards(n_episodes=eval_episodes, seed=seed + 1)
