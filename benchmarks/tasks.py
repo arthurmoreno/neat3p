@@ -28,11 +28,11 @@ class TaskSpec:
 
 
 def _register_voxel_forage() -> None:
-    import neat3p.benchmarks.envs  # noqa: F401
+    import neat3p.gym_envs  # noqa: F401
 
 
-def _voxel_forage_substrate():
-    from neat3p.benchmarks.substrates import voxel_forage_substrate
+def _voxel_forage_substrate() -> tuple[list, list, list]:
+    from neat3p.gym_envs.substrates import voxel_forage_substrate
 
     return voxel_forage_substrate()
 

@@ -8,7 +8,7 @@ What this validates:
   - neat3p.nn.composite.NEATRecurrentNet (the shipping game-contract brain net)
     drives a CartPole agent — i.e. we test the class the game would plug in, not the
     raw RecurrentNet phenotype.
-  - neat3p.benchmarks.runners.gym_eval.run_neat_gym provides the eval harness.
+  - benchmarks.runners.gym_eval.run_neat_gym provides the eval harness.
   - NEAT (memoryless, feed_forward=True) reliably solves CartPole-v1.
   - Run is seeded so CI is reproducible.
 """
@@ -38,7 +38,7 @@ _CFG_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../bench
 @pytest.mark.slow
 def test_cartpole_recurrent_net_solves():
     """NEATRecurrentNet solves CartPole-v1 ≥ 475 mean reward within budget (seeded)."""
-    from neat3p.benchmarks.runners.gym_eval import run_neat_gym
+    from benchmarks.runners.gym_eval import run_neat_gym
     from neat3p.nn.composite import NEATRecurrentNet
 
     result = run_neat_gym(

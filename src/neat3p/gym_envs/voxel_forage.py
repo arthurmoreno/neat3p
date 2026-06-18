@@ -56,7 +56,7 @@ class VoxelForageEnv(gym.Env):
     def __init__(
         self,
         render_mode: str | None = None,
-        size=(8, 8, 3),  # grid (W, H, D)
+        size: tuple[int, int, int] = (8, 8, 3),  # grid (W, H, D)
         n_food: int = 6,
         n_hazard: int = 3,
         n_wall: int = 6,
@@ -70,7 +70,7 @@ class VoxelForageEnv(gym.Env):
         max_steps: int = 160,
         scent: bool = True,
         reward_shaping: float = 0.0,
-    ):
+    ) -> None:
         super().__init__()
         self.use_scent = scent
         # Dense potential-based shaping weight: per step, reward += reward_shaping * scent[pos].
@@ -102,7 +102,7 @@ class VoxelForageEnv(gym.Env):
         self._clock = None
 
     # ── world generation ────────────────────────────────────────────────────
-    def _rand_empty_cell(self):
+    def _rand_empty_cell(self) -> tuple[int, int, int]:
         while True:
             x = int(self.np_random.integers(self.W))
             y = int(self.np_random.integers(self.H))
@@ -110,7 +110,7 @@ class VoxelForageEnv(gym.Env):
             if not (self.wall[x, y, z] or self.food[x, y, z] or self.hazard[x, y, z]) and (x, y, z) != tuple(self.pos):
                 return x, y, z
 
-    def _recompute_scent(self):
+    def _recompute_scent(self) -> None:
         """Diffused scent field: sum of exp(-dist/scale) over remaining food, normalised to [0,1]."""
         self.scent = np.zeros((self.W, self.H, self.D), dtype=np.float32)
         food_cells = np.argwhere(self.food)
@@ -124,7 +124,7 @@ class VoxelForageEnv(gym.Env):
         if m > 0:
             self.scent /= m
 
-    def reset(self, *, seed=None, options=None):
+    def reset(self, *, seed: int | None = None, options: dict | None = None) -> tuple[np.ndarray, dict]:
         super().reset(seed=seed)
         self.wall = np.zeros((self.W, self.H, self.D), dtype=bool)
         self.food = np.zeros((self.W, self.H, self.D), dtype=bool)
@@ -151,7 +151,7 @@ class VoxelForageEnv(gym.Env):
         return self._obs(), self._info()
 
     # ── observation ─────────────────────────────────────────────────────────
-    def _obs(self):
+    def _obs(self) -> np.ndarray:
         patch = np.zeros(self.patch_shape, dtype=np.float32)
         ax, ay, az = self.pos
         for k, dz in enumerate(range(-self.zr, self.zr + 1)):
@@ -176,11 +176,11 @@ class VoxelForageEnv(gym.Env):
         )
         return np.concatenate([patch.reshape(-1), scalars]).astype(np.float32)
 
-    def _info(self):
+    def _info(self) -> dict:
         return {"energy": self.energy, "collected": self.collected, "steps": self.steps}
 
     # ── dynamics ────────────────────────────────────────────────────────────
-    def step(self, action):
+    def step(self, action: int) -> tuple[np.ndarray, float, bool, bool, dict]:
         dx, dy, dz = _ACTION_DELTAS[int(action)]
         nx, ny, nz = self.pos[0] + dx, self.pos[1] + dy, self.pos[2] + dz
 
@@ -215,7 +215,7 @@ class VoxelForageEnv(gym.Env):
         return self._obs(), float(reward), bool(terminated), bool(truncated), self._info()
 
     # ── rendering (simple pygame top-down of the agent's z-plane) ────────────
-    def render(self):
+    def render(self) -> np.ndarray | None:
         if self.render_mode is None:
             return None
         import pygame
@@ -258,7 +258,10 @@ class VoxelForageEnv(gym.Env):
         pygame.draw.circle(
             surf, (70, 140, 240), (ax * cell + cell // 2 - 1, margin_top + ay * cell + cell // 2 - 1), cell // 3
         )
-        hud = f"z={az} energy={self.energy:5.1f} food={self.collected:5.0f}/{self.total_food_energy:.0f} step={self.steps}"
+        hud = (
+            f"z={az} energy={self.energy:5.1f} "
+            f"food={self.collected:5.0f}/{self.total_food_energy:.0f} step={self.steps}"
+        )
         surf.blit(self._font, (6, 10)) if False else surf.blit(self._font.render(hud, True, (230, 230, 230)), (6, 10))
 
         if self.render_mode == "human":
@@ -269,7 +272,7 @@ class VoxelForageEnv(gym.Env):
 
         return _np.transpose(pygame.surfarray.array3d(surf), (1, 0, 2))
 
-    def close(self):
+    def close(self) -> None:
         if self._screen is not None:
             import pygame
 

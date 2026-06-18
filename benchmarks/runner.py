@@ -19,9 +19,9 @@ import os
 import numpy as np
 import torch
 
-from neat3p.benchmarks.artifacts import save_winner
-from neat3p.benchmarks.runners.gym_eval import run_neat_gym
+from benchmarks.artifacts import save_winner
 from benchmarks.models import MODELS
+from benchmarks.runners.gym_eval import GymEvalResult, run_neat_gym
 from benchmarks.tasks import TASKS
 
 _DEFAULT_OUTPUT = os.path.join(os.path.dirname(__file__), "output")
@@ -35,7 +35,7 @@ def stats_dict(
     *,
     task_name: str,
     model_kind: str,
-    result,
+    result: GymEvalResult,
     rewards: list[float],
     env_id: str,
     solve_threshold: float,

@@ -37,7 +37,7 @@ def test_cartpole_feature_attention_solves():
     GREEN when the full encoder→attention→RecurrentNet pipeline works and NEAT can
     adapt through the fixed front-end to achieve ≥ 475 mean reward over 100 episodes.
     """
-    from neat3p.benchmarks.runners.gym_eval import run_neat_gym
+    from benchmarks.runners.gym_eval import run_neat_gym
     from neat3p.nn.composite import NEATNetWithFeatureAttention
 
     result = run_neat_gym(

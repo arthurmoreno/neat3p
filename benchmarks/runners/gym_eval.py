@@ -17,7 +17,7 @@ The harness auto-detects the interface via ``hasattr(net_class, 'create')``.
 
 Usage::
 
-    from neat3p.benchmarks.runners.gym_eval import run_neat_gym
+    from benchmarks.runners.gym_eval import run_neat_gym
     from neat3p.nn.phenotypes.recurrent_net import RecurrentNet
     from neat3p.nn.composite import NEATNetWithFeatureAttention
 
@@ -29,6 +29,7 @@ Usage::
 
 import random
 import time
+from typing import Any
 
 import gymnasium as gym
 import numpy as np
@@ -101,7 +102,9 @@ def _is_recurrent_style(net_class) -> bool:
     return hasattr(net_class, "create")
 
 
-def _make_net(net_class, genome, config, state_dim, action_dim, use_current_activs, net_kwargs):
+def _make_net(
+    net_class, genome, config, state_dim: int, action_dim: int, use_current_activs: bool, net_kwargs: dict
+) -> Any:
     if _is_recurrent_style(net_class):
         return net_class.create(genome, config, batch_size=1, use_current_activs=use_current_activs)
     return net_class(genome, state_dim, action_dim, config, **net_kwargs)
@@ -239,7 +242,7 @@ class GymEvalResult:
         return float(np.mean(self.evaluate_rewards(n_episodes=n_episodes, seed=seed)))
 
 
-def _world_seeds_pure(strategy: str, seed: int, K: int, gen: int):
+def _world_seeds_pure(strategy: str, seed: int, K: int, gen: int) -> list[int] | None:
     """Pure function returning the K world seeds for this generation.
 
     strategy: "per_generation" | "fixed" | "random"

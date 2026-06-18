@@ -20,24 +20,24 @@ problem so results are directly comparable.
 All commands go through the unified CLI:
 
 ```bash
-python -m neat3p.benchmarks <subcommand> [options]
+python -m benchmarks <subcommand> [options]
 ```
 
 ### train — one (task × model) run
 
 ```bash
 # VoxelForage plain NEAT, 120 generations, scent variant
-python -m neat3p.benchmarks train \
+python -m benchmarks train \
     --task voxel_forage --model recurrent_net \
     --seed 42 --generations 120 --episodes-per-genome 5
 
 # Feature-attention with pretrain, no-scent (harder)
-python -m neat3p.benchmarks train \
+python -m benchmarks train \
     --task voxel_forage --model feature_attention \
     --variant noscent --pretrain-episodes 300 --pretrain-epochs 120
 
 # CartPole with Adaptive HyperNEAT, watch winner after training
-python -m neat3p.benchmarks train \
+python -m benchmarks train \
     --task cartpole --model adaptive_hyperneat --render
 ```
 
@@ -45,18 +45,18 @@ python -m neat3p.benchmarks train \
 
 ```bash
 # Short comparison (15 gens × 2 seeds), builds HTML report
-python -m neat3p.benchmarks suite \
+python -m benchmarks suite \
     --task voxel_forage --runs 2 --generations 15 \
     --output voxel_forage_report.html
 
 # Only two models, scent variant, both HTML and Markdown
-python -m neat3p.benchmarks suite \
+python -m benchmarks suite \
     --task voxel_forage \
     --models recurrent_net feature_attention \
     --format both --output comparison
 
 # Longer run, no-scent, custom seeds
-python -m neat3p.benchmarks suite \
+python -m benchmarks suite \
     --task voxel_forage --generations 60 --seeds 42,123,456 \
     --variant noscent
 ```
@@ -65,19 +65,19 @@ python -m neat3p.benchmarks suite \
 
 ```bash
 # List saved winners
-python -m neat3p.benchmarks replay
+python -m benchmarks replay
 
 # Watch a specific winner
-python -m neat3p.benchmarks replay benchmarks/output/recurrent_net_scent_seed42.pkl
-python -m neat3p.benchmarks replay benchmarks/output/feature_attention_scent_seed42.pkl --episodes 5
-python -m neat3p.benchmarks replay benchmarks/output/hyper_neat_scent_seed42.pkl --no-render
+python -m benchmarks replay benchmarks/output/recurrent_net_scent_seed42.pkl
+python -m benchmarks replay benchmarks/output/feature_attention_scent_seed42.pkl --episodes 5
+python -m benchmarks replay benchmarks/output/hyper_neat_scent_seed42.pkl --no-render
 ```
 
 ### play — play VoxelForage yourself
 
 ```bash
-python -m neat3p.benchmarks play --task voxel_forage
-python -m neat3p.benchmarks play --task voxel_forage --no-scent
+python -m benchmarks play --task voxel_forage
+python -m benchmarks play --task voxel_forage --no-scent
 ```
 
 Controls: arrows/WASD to move, Q/E for up/down, Space to idle, R to reset, Esc to quit.

@@ -16,8 +16,12 @@ Optional: training_rss_mb, peak_gpu_mb, validation_stats, winner_path, env_id.
 from __future__ import annotations
 
 import time
+from typing import TYPE_CHECKING
 
 import numpy as np
+
+if TYPE_CHECKING:
+    import plotly.graph_objects as go
 
 # ---------------------------------------------------------------------------
 # Shared helpers
@@ -88,7 +92,7 @@ def _summary_table_html(all_results: list[dict]) -> str:
     return df.to_html(index=False, border=0, classes="summary-table")
 
 
-def _fig_convergence(all_results, colors):
+def _fig_convergence(all_results: list[dict], colors: dict[str, str]) -> go.Figure:
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
@@ -143,7 +147,7 @@ def _fig_convergence(all_results, colors):
     return fig
 
 
-def _fig_boxes(all_results, colors):
+def _fig_boxes(all_results: list[dict], colors: dict[str, str]) -> go.Figure:
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
@@ -183,7 +187,7 @@ def _fig_boxes(all_results, colors):
     return fig
 
 
-def _fig_network_complexity(all_results, colors):
+def _fig_network_complexity(all_results: list[dict], colors: dict[str, str]) -> go.Figure:
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
@@ -216,7 +220,7 @@ def _fig_network_complexity(all_results, colors):
     return fig
 
 
-def _fig_memory(all_results, colors):
+def _fig_memory(all_results: list[dict], colors: dict[str, str]) -> go.Figure | None:
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
@@ -272,7 +276,7 @@ def _fig_memory(all_results, colors):
     return fig
 
 
-def _fig_mean_fitness_bands(all_results, colors):
+def _fig_mean_fitness_bands(all_results: list[dict], colors: dict[str, str]) -> go.Figure:
     import plotly.graph_objects as go
 
     groups = _group_by_name(all_results)
@@ -323,7 +327,7 @@ def _fig_mean_fitness_bands(all_results, colors):
     return fig
 
 
-def _fig_validation(all_results, colors):
+def _fig_validation(all_results: list[dict], colors: dict[str, str]) -> go.Figure | None:
     import plotly.graph_objects as go
 
     groups = _group_by_name(all_results)
@@ -371,7 +375,7 @@ def to_html(all_results: list[dict], output_path: str) -> None:
     fig_complexity = _fig_network_complexity(all_results, colors)
     fig_memory = _fig_memory(all_results, colors)
 
-    def _to_div(fig):
+    def _to_div(fig: go.Figure | None) -> str:
         if fig is None:
             return ""
         return fig.to_html(full_html=False, include_plotlyjs=False)
@@ -438,7 +442,6 @@ def to_html(all_results: list[dict], output_path: str) -> None:
 
 def to_markdown(all_results: list[dict], output_path: str) -> None:
     """Write a GitHub-readable .md report with summary table + Mermaid convergence chart."""
-    benchmark_names = list(dict.fromkeys(r["benchmark_name"] for r in all_results))
     groups = _group_by_name(all_results)
     timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
     run_summary = ", ".join(f"{k}: {len(v)} runs" for k, v in groups.items())

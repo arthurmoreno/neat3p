@@ -11,7 +11,12 @@ scalar attributes) onto a 2-D plane that preserves spatial structure: voxels kee
 import numpy as np
 
 
-def voxel_forage_substrate(patch_shape=(3, 3, 3, 3), n_scalars=2, n_hidden=9, n_actions=7):
+def voxel_forage_substrate(
+    patch_shape: tuple[int, int, int, int] = (3, 3, 3, 3),
+    n_scalars: int = 2,
+    n_hidden: int = 9,
+    n_actions: int = 7,
+) -> tuple[list[list[float]], list[list[float]], list[list[float]]]:
     """Return (input_coords, hidden_coords, output_coords) as lists of [x, y].
 
     Input order matches the env's flattened observation: patch.reshape(-1) in (C, D, H, W)

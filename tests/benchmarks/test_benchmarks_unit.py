@@ -16,7 +16,7 @@ import pytest
 
 
 def test_seed_for_determinism():
-    from neat3p.benchmarks.runners.gym_eval import _seed_for
+    from benchmarks.runners.gym_eval import _seed_for
 
     assert _seed_for(42, 0) == _seed_for(42, 0)
     assert _seed_for(42, 1) != _seed_for(42, 0)
@@ -24,7 +24,7 @@ def test_seed_for_determinism():
 
 def test_seed_for_disjoint_bases():
     """Distinct bases should produce non-overlapping streams for reasonable idx ranges."""
-    from neat3p.benchmarks.runners.gym_eval import _seed_for
+    from benchmarks.runners.gym_eval import _seed_for
 
     base_a = {_seed_for(42, i) for i in range(100)}
     base_b = {_seed_for(99, i) for i in range(100)}
@@ -33,7 +33,7 @@ def test_seed_for_disjoint_bases():
 
 
 def test_world_seeds_pure_per_generation():
-    from neat3p.benchmarks.runners.gym_eval import _world_seeds_pure
+    from benchmarks.runners.gym_eval import _world_seeds_pure
 
     s0 = _world_seeds_pure("per_generation", 42, 4, 0)
     s1 = _world_seeds_pure("per_generation", 42, 4, 1)
@@ -43,7 +43,7 @@ def test_world_seeds_pure_per_generation():
 
 
 def test_world_seeds_pure_fixed():
-    from neat3p.benchmarks.runners.gym_eval import _world_seeds_pure
+    from benchmarks.runners.gym_eval import _world_seeds_pure
 
     s_gen0 = _world_seeds_pure("fixed", 42, 4, 0)
     s_gen5 = _world_seeds_pure("fixed", 42, 4, 5)
@@ -51,7 +51,7 @@ def test_world_seeds_pure_fixed():
 
 
 def test_world_seeds_pure_random():
-    from neat3p.benchmarks.runners.gym_eval import _world_seeds_pure
+    from benchmarks.runners.gym_eval import _world_seeds_pure
 
     assert _world_seeds_pure("random", 42, 4, 0) is None
 
@@ -62,7 +62,7 @@ def test_world_seeds_pure_random():
 
 
 def test_voxel_forage_substrate_input_count():
-    from neat3p.benchmarks.substrates import voxel_forage_substrate
+    from neat3p.gym_envs.substrates import voxel_forage_substrate
 
     in_c, hid_c, out_c = voxel_forage_substrate()
     # Default (3, 3, 3, 3) patch = 3*3*3*3 = 81 voxels + 2 scalars = 83
@@ -70,7 +70,7 @@ def test_voxel_forage_substrate_input_count():
 
 
 def test_voxel_forage_substrate_shapes():
-    from neat3p.benchmarks.substrates import voxel_forage_substrate
+    from neat3p.gym_envs.substrates import voxel_forage_substrate
 
     in_c, hid_c, out_c = voxel_forage_substrate()
     assert all(len(c) == 2 for c in in_c), "each input coord must be [x, y]"
@@ -80,14 +80,14 @@ def test_voxel_forage_substrate_shapes():
 
 
 def test_voxel_forage_substrate_hidden_count():
-    from neat3p.benchmarks.substrates import voxel_forage_substrate
+    from neat3p.gym_envs.substrates import voxel_forage_substrate
 
     _, hid_c, _ = voxel_forage_substrate(n_hidden=9)
     assert len(hid_c) == 9
 
 
 def test_voxel_forage_substrate_determinism():
-    from neat3p.benchmarks.substrates import voxel_forage_substrate
+    from neat3p.gym_envs.substrates import voxel_forage_substrate
 
     a = voxel_forage_substrate()
     b = voxel_forage_substrate()
@@ -100,13 +100,13 @@ def test_voxel_forage_substrate_determinism():
 
 
 def test_env_tag_scent():
-    from neat3p.benchmarks.artifacts import _env_tag
+    from benchmarks.artifacts import _env_tag
 
     assert _env_tag("VoxelForage-v0") == "scent"
 
 
 def test_env_tag_noscent():
-    from neat3p.benchmarks.artifacts import _env_tag
+    from benchmarks.artifacts import _env_tag
 
     assert _env_tag("VoxelForage-NoScent-v0") == "noscent"
 
@@ -141,7 +141,7 @@ def _make_fake_result(genome):
 
 
 def test_save_winner_filename(tmp_path):
-    from neat3p.benchmarks.artifacts import save_winner
+    from benchmarks.artifacts import save_winner
 
     genome = _make_fake_genome()
     result = _make_fake_result(genome)
@@ -152,7 +152,7 @@ def test_save_winner_filename(tmp_path):
 
 
 def test_save_winner_keys(tmp_path):
-    from neat3p.benchmarks.artifacts import save_winner
+    from benchmarks.artifacts import save_winner
 
     genome = _make_fake_genome()
     result = _make_fake_result(genome)

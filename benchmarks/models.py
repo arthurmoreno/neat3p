@@ -6,9 +6,12 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import torch
+
+if TYPE_CHECKING:
+    from benchmarks.tasks import TaskSpec
 
 _CONFIGS = os.path.join(os.path.dirname(__file__), "configs")
 
@@ -35,16 +38,16 @@ class ModelAdapter:
     def accepts(self, kwargs: dict) -> dict:
         return {k: v for k, v in kwargs.items() if k in self.tunables}
 
-    def config_path(self, task) -> str:
+    def config_path(self, task: TaskSpec) -> str:
         specific = _config(f"{task.name}_{self.kind}.cfg")
         if os.path.isfile(specific):
             return specific
         return _config(f"{task.name}.cfg")
 
-    def build(self, task, env_id: str, seed: int, device: str, verbose: bool, **tunables) -> NetBuild:
+    def build(self, task: TaskSpec, env_id: str, seed: int, device: str, verbose: bool, **tunables: Any) -> NetBuild:
         raise NotImplementedError
 
-    def rebuild(self, pkg: dict, device: str):
+    def rebuild(self, pkg: dict, device: str) -> tuple[Any, str]:
         raise NotImplementedError
 
 
@@ -57,18 +60,21 @@ class _RecurrentNetAdapter(ModelAdapter):
     kind = "recurrent_net"
     tunables = {}
 
-    def build(self, task, env_id, seed, device, verbose, **tunables) -> NetBuild:
+    def build(self, task: TaskSpec, env_id: str, seed: int, device: str, verbose: bool, **tunables: Any) -> NetBuild:
         from neat3p.nn.composite import NEATRecurrentNet
 
         return NetBuild(NEATRecurrentNet, {}, {})
 
-    def rebuild(self, pkg, device):
+    def rebuild(self, pkg: dict, device: str) -> tuple[Any, str]:
         import neat3p
         from neat3p.nn.composite import NEATRecurrentNet
 
         config = neat3p.Config(
-            neat3p.DefaultGenome, neat3p.DefaultReproduction,
-            neat3p.DefaultSpeciesSet, neat3p.DefaultStagnation, pkg["config_path"],
+            neat3p.DefaultGenome,
+            neat3p.DefaultReproduction,
+            neat3p.DefaultSpeciesSet,
+            neat3p.DefaultStagnation,
+            pkg["config_path"],
         )
         return NEATRecurrentNet(
             pkg["winner_genome"], pkg["state_dim"], pkg["action_dim"], config, device_alias=device
@@ -80,8 +86,18 @@ class _RecurrentNetAdapter(ModelAdapter):
 # ---------------------------------------------------------------------------
 
 
-def _pretrain_frontend(state_dim, feature_dim, env_id, device, seed, verbose,
-                       pretrain_episodes, pretrain_epochs, pretrain_batch, pretrain_lr):
+def _pretrain_frontend(
+    state_dim: int,
+    feature_dim: int,
+    env_id: str,
+    device: str,
+    seed: int,
+    verbose: bool,
+    pretrain_episodes: int,
+    pretrain_epochs: int,
+    pretrain_batch: int,
+    pretrain_lr: float,
+) -> tuple[Any, Any]:
     import gymnasium as gym
     import numpy as np
     import torch
@@ -114,9 +130,13 @@ def _pretrain_frontend(state_dim, feature_dim, env_id, device, seed, verbose,
         lr=pretrain_lr,
     )
     loader = torch.utils.data.DataLoader(
-        torch.utils.data.TensorDataset(obs_tensor), batch_size=pretrain_batch, shuffle=True,
+        torch.utils.data.TensorDataset(obs_tensor),
+        batch_size=pretrain_batch,
+        shuffle=True,
     )
-    encoder.train(); attn.train(); decoder.train()
+    encoder.train()
+    attn.train()
+    decoder.train()
     ebar = _tqdm(range(pretrain_epochs), desc=f"pretrain {state_dim}->{feature_dim}", position=1, leave=False)
     epoch_loss = 0.0
     for _epoch in ebar:
@@ -130,7 +150,8 @@ def _pretrain_frontend(state_dim, feature_dim, env_id, device, seed, verbose,
         ebar.set_postfix(loss=f"{epoch_loss / len(loader):.5f}", refresh=False)
     ebar.close()
     final_loss = epoch_loss / len(loader)
-    encoder.eval(); attn.eval()
+    encoder.eval()
+    attn.eval()
     _tqdm.write(
         f"  [pretrain] encoder {state_dim}->{feature_dim}: {len(obs_tensor)} obs, "
         f"{pretrain_epochs} epochs, final recon loss={final_loss:.5f}"
@@ -149,8 +170,9 @@ class _FeatureAttentionAdapter(ModelAdapter):
         "feature_dim": int,
     }
 
-    def build(self, task, env_id, seed, device, verbose, **tunables) -> NetBuild:
+    def build(self, task: TaskSpec, env_id: str, seed: int, device: str, verbose: bool, **tunables: Any) -> NetBuild:
         import gymnasium as gym
+
         from neat3p.nn.composite import NEATNetWithFeatureAttention
         from neat3p.nn.modules.attention import FeatureAttention
         from neat3p.nn.modules.encoders import SimpleEncoder
@@ -168,8 +190,16 @@ class _FeatureAttentionAdapter(ModelAdapter):
 
         if pretrain:
             encoder, attn = _pretrain_frontend(
-                state_dim, feature_dim, env_id, device, seed, verbose,
-                pretrain_episodes, pretrain_epochs, pretrain_batch, pretrain_lr,
+                state_dim,
+                feature_dim,
+                env_id,
+                device,
+                seed,
+                verbose,
+                pretrain_episodes,
+                pretrain_epochs,
+                pretrain_batch,
+                pretrain_lr,
             )
         else:
             if verbose:
@@ -183,7 +213,7 @@ class _FeatureAttentionAdapter(ModelAdapter):
             save_extras={"feature_dim": feature_dim, "encoder": encoder, "attn": attn},
         )
 
-    def rebuild(self, pkg, device):
+    def rebuild(self, pkg: dict, device: str) -> tuple[Any, str]:
         import neat3p
         from neat3p.nn.composite import NEATNetWithFeatureAttention
         from neat3p.nn.modules.attention import FeatureAttention
@@ -191,12 +221,17 @@ class _FeatureAttentionAdapter(ModelAdapter):
 
         fd, sd, ad = pkg["feature_dim"], pkg["state_dim"], pkg["action_dim"]
         enc = SimpleEncoder(sd, fd, device=device)
-        enc.load_state_dict(pkg["encoder_state_dict"]); enc.eval()
+        enc.load_state_dict(pkg["encoder_state_dict"])
+        enc.eval()
         attn = FeatureAttention(input_dim=fd, device=device)
-        attn.load_state_dict(pkg["attn_state_dict"]); attn.eval()
+        attn.load_state_dict(pkg["attn_state_dict"])
+        attn.eval()
         config = neat3p.Config(
-            neat3p.DefaultGenome, neat3p.DefaultReproduction,
-            neat3p.DefaultSpeciesSet, neat3p.DefaultStagnation, pkg["config_path"],
+            neat3p.DefaultGenome,
+            neat3p.DefaultReproduction,
+            neat3p.DefaultSpeciesSet,
+            neat3p.DefaultStagnation,
+            pkg["config_path"],
         )
         return NEATNetWithFeatureAttention(
             pkg["winner_genome"], sd, ad, config, device_alias=device, encoder=enc, attn=attn
@@ -208,19 +243,22 @@ class _FeatureAttentionAdapter(ModelAdapter):
 # ---------------------------------------------------------------------------
 
 
-def _make_hyperneat_wrapper(in_c, hid_c, out_c, device):
+def _make_hyperneat_wrapper(in_c: Any, hid_c: Any, out_c: Any, device: str) -> type:
     from neat3p.nn.composite import HyperNEATNet
 
     class _W:
-        def __init__(self, net): self._net = net
+        def __init__(self, net):
+            self._net = net
 
         @classmethod
         def create(cls, genome, config, batch_size=1, use_current_activs=True, _dev=device):
-            return cls(HyperNEATNet.create(genome, config, in_c, hid_c, out_c,
-                                           batch_size=batch_size, device=_dev))
+            return cls(HyperNEATNet.create(genome, config, in_c, hid_c, out_c, batch_size=batch_size, device=_dev))
 
-        def activate(self, inputs): return self._net.activate(inputs)
-        def reset(self, batch_size=None): self._net.reset(batch_size)
+        def activate(self, inputs):
+            return self._net.activate(inputs)
+
+        def reset(self, batch_size=None):
+            self._net.reset(batch_size)
 
     return _W
 
@@ -229,21 +267,24 @@ class _HyperNEATAdapter(ModelAdapter):
     kind = "hyper_neat"
     tunables = {}
 
-    def build(self, task, env_id, seed, device, verbose, **tunables) -> NetBuild:
+    def build(self, task: TaskSpec, env_id: str, seed: int, device: str, verbose: bool, **tunables: Any) -> NetBuild:
         if task.substrate is None:
             raise ValueError(f"Task '{task.name}' has no substrate; hyper_neat requires one.")
         in_c, hid_c, out_c = task.substrate()
         return NetBuild(_make_hyperneat_wrapper(in_c, hid_c, out_c, device), {}, {})
 
-    def rebuild(self, pkg, device):
+    def rebuild(self, pkg: dict, device: str) -> tuple[Any, str]:
         import neat3p
-        from neat3p.benchmarks.substrates import voxel_forage_substrate
+        from neat3p.gym_envs.substrates import voxel_forage_substrate
         from neat3p.nn.composite import HyperNEATNet
 
         in_c, hid_c, out_c = voxel_forage_substrate()
         config = neat3p.Config(
-            neat3p.DefaultGenome, neat3p.DefaultReproduction,
-            neat3p.DefaultSpeciesSet, neat3p.DefaultStagnation, pkg["config_path"],
+            neat3p.DefaultGenome,
+            neat3p.DefaultReproduction,
+            neat3p.DefaultSpeciesSet,
+            neat3p.DefaultStagnation,
+            pkg["config_path"],
         )
         return HyperNEATNet.create(pkg["winner_genome"], config, in_c, hid_c, out_c, device=device), "recurrent"
 
@@ -253,20 +294,32 @@ class _HyperNEATAdapter(ModelAdapter):
 # ---------------------------------------------------------------------------
 
 
-def _make_adaptive_wrapper(in_c, hid_c, out_c, device):
+def _make_adaptive_wrapper(in_c: Any, hid_c: Any, out_c: Any, device: str) -> type:
     from neat3p.nn.composite import AdaptiveNet
 
     class _W:
-        def __init__(self, net): self._net = net
+        def __init__(self, net):
+            self._net = net
 
         @classmethod
         def create(cls, genome, config, batch_size=1, use_current_activs=True, _dev=device):
-            return cls(AdaptiveNet.create(genome, config,
-                                          input_coords=in_c, hidden_coords=hid_c, output_coords=out_c,
-                                          batch_size=batch_size, device=_dev))
+            return cls(
+                AdaptiveNet.create(
+                    genome,
+                    config,
+                    input_coords=in_c,
+                    hidden_coords=hid_c,
+                    output_coords=out_c,
+                    batch_size=batch_size,
+                    device=_dev,
+                )
+            )
 
-        def activate(self, inputs): return self._net.activate(inputs)
-        def reset(self, batch_size=None): self._net.reset()
+        def activate(self, inputs):
+            return self._net.activate(inputs)
+
+        def reset(self, batch_size=None):
+            self._net.reset()
 
     return _W
 
@@ -275,25 +328,28 @@ class _AdaptiveHyperNEATAdapter(ModelAdapter):
     kind = "adaptive_hyperneat"
     tunables = {}
 
-    def build(self, task, env_id, seed, device, verbose, **tunables) -> NetBuild:
+    def build(self, task: TaskSpec, env_id: str, seed: int, device: str, verbose: bool, **tunables: Any) -> NetBuild:
         if task.substrate is None:
             raise ValueError(f"Task '{task.name}' has no substrate; adaptive_hyperneat requires one.")
         in_c, hid_c, out_c = task.substrate()
         return NetBuild(_make_adaptive_wrapper(in_c, hid_c, out_c, device), {}, {})
 
-    def rebuild(self, pkg, device):
+    def rebuild(self, pkg: dict, device: str) -> tuple[Any, str]:
         import neat3p
-        from neat3p.benchmarks.substrates import voxel_forage_substrate
+        from neat3p.gym_envs.substrates import voxel_forage_substrate
         from neat3p.nn.composite import AdaptiveNet
 
         in_c, hid_c, out_c = voxel_forage_substrate()
         config = neat3p.Config(
-            neat3p.DefaultGenome, neat3p.DefaultReproduction,
-            neat3p.DefaultSpeciesSet, neat3p.DefaultStagnation, pkg["config_path"],
+            neat3p.DefaultGenome,
+            neat3p.DefaultReproduction,
+            neat3p.DefaultSpeciesSet,
+            neat3p.DefaultStagnation,
+            pkg["config_path"],
         )
-        return AdaptiveNet.create(pkg["winner_genome"], config,
-                                   input_coords=in_c, hidden_coords=hid_c, output_coords=out_c,
-                                   device=device), "recurrent"
+        return AdaptiveNet.create(
+            pkg["winner_genome"], config, input_coords=in_c, hidden_coords=hid_c, output_coords=out_c, device=device
+        ), "recurrent"
 
 
 # ---------------------------------------------------------------------------

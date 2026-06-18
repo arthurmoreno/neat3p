@@ -163,16 +163,14 @@ def _replay_winner(
     import numpy as np
     import torch
 
-    import neat3p.benchmarks.envs  # noqa: F401
-    from neat3p.benchmarks.artifacts import load_winner, reset_net, select_action
+    import neat3p.gym_envs  # noqa: F401
+    from benchmarks.artifacts import load_winner, reset_net, select_action
 
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
     pkg, net, style = load_winner(winner_path, device=device)
     env_id = _resolve_env_id(env, variant, pkg["env_id"])
     override = " (override)" if env_id != pkg["env_id"] else ""
-    print(
-        f"Replaying {pkg['kind']}  env={env_id}{override}  seed={pkg['seed']}  train_fitness={pkg['fitness']:.1f}"
-    )
+    print(f"Replaying {pkg['kind']}  env={env_id}{override}  seed={pkg['seed']}  train_fitness={pkg['fitness']:.1f}")
 
     render_mode = "human" if render else None
     env = gym.make(env_id, render_mode=render_mode)
@@ -196,7 +194,7 @@ def _replay_winner(
 
 
 def _cmd_replay(args: argparse.Namespace) -> None:
-    from neat3p.benchmarks.artifacts import list_winners
+    from benchmarks.artifacts import list_winners
 
     if args.winner is None:
         saved = list_winners(_DEFAULT_OUTPUT)
@@ -207,9 +205,7 @@ def _cmd_replay(args: argparse.Namespace) -> None:
         for p in saved:
             print(f"  {p}")
         return
-    _replay_winner(
-        args.winner, episodes=args.episodes, render=not args.no_render, env=args.env, variant=args.variant
-    )
+    _replay_winner(args.winner, episodes=args.episodes, render=not args.no_render, env=args.env, variant=args.variant)
 
 
 # ---------------------------------------------------------------------------
@@ -221,7 +217,7 @@ def _cmd_play(args: argparse.Namespace) -> None:
     import gymnasium as gym
     import pygame
 
-    import neat3p.benchmarks.envs  # noqa: F401
+    import neat3p.gym_envs  # noqa: F401
 
     task_name = args.task
     if task_name != "voxel_forage":
