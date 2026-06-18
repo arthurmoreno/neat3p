@@ -63,6 +63,7 @@ neat3p = ["include/neat3p/neat3p.hpp"]
 markers = [
     "slow: benchmark tests that run a full NEAT training loop (deselect with -m 'not slow')",
 ]
+pythonpath = ["src", "."]
 
 [tool.ruff]
 line-length = 120

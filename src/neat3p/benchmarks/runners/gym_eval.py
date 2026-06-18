@@ -38,6 +38,7 @@ import neat3p
 
 try:
     import psutil as _psutil
+
     _PROC = _psutil.Process()
     _HAS_PSUTIL = True
 except ImportError:
@@ -238,6 +239,19 @@ class GymEvalResult:
         return float(np.mean(self.evaluate_rewards(n_episodes=n_episodes, seed=seed)))
 
 
+def _world_seeds_pure(strategy: str, seed: int, K: int, gen: int):
+    """Pure function returning the K world seeds for this generation.
+
+    strategy: "per_generation" | "fixed" | "random"
+    Returns None for "random" (each rollout draws a fresh unseeded world).
+    """
+    if strategy == "random":
+        return None
+    if strategy == "fixed":
+        return [_seed_for(seed, i) for i in range(K)]
+    return [_seed_for(seed, gen * K + i) for i in range(K)]  # per_generation
+
+
 def run_neat_gym(
     env_id: str,
     config_path: str,
@@ -292,19 +306,16 @@ def run_neat_gym(
     gen_counter = [0]
 
     def _world_seeds(g):
-        # See EVALUATION_STRATEGIES.md for the trade-offs of each strategy.
-        if eval_strategy == "random":
-            return None  # fresh unseeded world per rollout (between-genome luck)
-        if eval_strategy == "fixed":
-            return [_seed_for(seed, i) for i in range(episodes_per_genome)]
-        return [_seed_for(seed, g * episodes_per_genome + i) for i in range(episodes_per_genome)]  # per_generation
+        return _world_seeds_pure(eval_strategy, seed, episodes_per_genome, g)
 
     def eval_genomes(genomes, cfg):
         world_seeds = _world_seeds(gen_counter[0])
         for _gid, genome in genomes:
             net = _make_net(net_class, genome, cfg, state_dim, action_dim, use_current_activs, net_kwargs)
             if world_seeds is None:
-                genome.fitness = float(np.mean([_rollout(env, net, recurrent_style) for _ in range(episodes_per_genome)]))
+                genome.fitness = float(
+                    np.mean([_rollout(env, net, recurrent_style) for _ in range(episodes_per_genome)])
+                )
             else:
                 genome.fitness = float(np.mean([_rollout(env, net, recurrent_style, seed=s) for s in world_seeds]))
         gen_counter[0] += 1
@@ -322,8 +333,10 @@ def run_neat_gym(
     if validation_episodes > 0:
         # Held-out worlds: a seed stream distinct from training (seed) and final eval (seed+1).
         val_seeds = [_seed_for(seed + 4242, i) for i in range(validation_episodes)]
+
         def _make(genome, cfg):
             return _make_net(net_class, genome, cfg, state_dim, action_dim, use_current_activs, net_kwargs)
+
         validation_reporter = _ValidationReporter(_make, env, recurrent_style, val_seeds)
         pop.add_reporter(validation_reporter)
 

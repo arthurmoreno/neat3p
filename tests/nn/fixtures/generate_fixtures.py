@@ -14,11 +14,10 @@ import os
 import numpy as np
 import torch
 
+import neat3p
 from neat3p.nn.modules.activations import sigmoid_activation
 from neat3p.nn.phenotypes.cppn import create_cppn
 from neat3p.nn.phenotypes.recurrent_net import RecurrentNet
-
-import neat3p
 
 _HERE = os.path.dirname(__file__)
 _CFG_PATH = os.path.join(os.path.dirname(__file__), "..", "configs", "xor.cfg")

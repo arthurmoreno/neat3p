@@ -32,19 +32,18 @@ Both share the same observation shape, so scores are directly comparable.
 
 from __future__ import annotations
 
-import numpy as np
-
 import gymnasium as gym
+import numpy as np
 from gymnasium import spaces
 
 # Action deltas, index = action id.
 _ACTION_DELTAS = [
-    (0, 0, 0),   # 0 idle
-    (1, 0, 0),   # 1 +x
+    (0, 0, 0),  # 0 idle
+    (1, 0, 0),  # 1 +x
     (-1, 0, 0),  # 2 -x
-    (0, 1, 0),   # 3 +y
+    (0, 1, 0),  # 3 +y
     (0, -1, 0),  # 4 -y
-    (0, 0, 1),   # 5 +z (up)
+    (0, 0, 1),  # 5 +z (up)
     (0, 0, -1),  # 6 -z (down)
 ]
 
@@ -57,17 +56,17 @@ class VoxelForageEnv(gym.Env):
     def __init__(
         self,
         render_mode: str | None = None,
-        size=(8, 8, 3),          # grid (W, H, D)
+        size=(8, 8, 3),  # grid (W, H, D)
         n_food: int = 6,
         n_hazard: int = 3,
         n_wall: int = 6,
         xy_radius: int = 1,
         z_radius: int = 1,
-        energy_start: float = 60.0,
+        energy_start: float = 100.0,
         energy_decay: float = 1.0,
         food_value: float = 20.0,
         hazard_damage: float = 15.0,
-        scent_scale: float = 2.5,
+        scent_scale: float = 4.5,
         max_steps: int = 160,
         scent: bool = True,
         reward_shaping: float = 0.0,
@@ -117,9 +116,7 @@ class VoxelForageEnv(gym.Env):
         food_cells = np.argwhere(self.food)
         if len(food_cells) == 0:
             return
-        xs, ys, zs = np.meshgrid(
-            np.arange(self.W), np.arange(self.H), np.arange(self.D), indexing="ij"
-        )
+        xs, ys, zs = np.meshgrid(np.arange(self.W), np.arange(self.H), np.arange(self.D), indexing="ij")
         for fx, fy, fz in food_cells:
             dist = np.sqrt((xs - fx) ** 2 + (ys - fy) ** 2 + (zs - fz) ** 2)
             self.scent += np.exp(-dist / self.scent_scale)
@@ -187,9 +184,7 @@ class VoxelForageEnv(gym.Env):
         dx, dy, dz = _ACTION_DELTAS[int(action)]
         nx, ny, nz = self.pos[0] + dx, self.pos[1] + dy, self.pos[2] + dz
 
-        moved = (
-            0 <= nx < self.W and 0 <= ny < self.H and 0 <= nz < self.D and not self.wall[nx, ny, nz]
-        )
+        moved = 0 <= nx < self.W and 0 <= ny < self.H and 0 <= nz < self.D and not self.wall[nx, ny, nz]
         if moved:
             self.pos = np.array([nx, ny, nz], dtype=int)
 
@@ -261,8 +256,7 @@ class VoxelForageEnv(gym.Env):
                 pygame.draw.rect(surf, color, rect)
         ax, ay = int(self.pos[0]), int(self.pos[1])
         pygame.draw.circle(
-            surf, (70, 140, 240),
-            (ax * cell + cell // 2 - 1, margin_top + ay * cell + cell // 2 - 1), cell // 3
+            surf, (70, 140, 240), (ax * cell + cell // 2 - 1, margin_top + ay * cell + cell // 2 - 1), cell // 3
         )
         hud = f"z={az} energy={self.energy:5.1f} food={self.collected:5.0f}/{self.total_food_energy:.0f} step={self.steps}"
         surf.blit(self._font, (6, 10)) if False else surf.blit(self._font.render(hud, True, (230, 230, 230)), (6, 10))

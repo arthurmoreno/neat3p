@@ -111,9 +111,8 @@ class NEATNetWithFeatureAttention(nn.Module):
 
         self.net = RecurrentNet.create(genome, config)
 
-        owned_params = (
-            ([] if encoder is not None else list(self.compiled_encoder.parameters()))
-            + ([] if attn is not None else list(self.compiled_feature_attn.parameters()))
+        owned_params = ([] if encoder is not None else list(self.compiled_encoder.parameters())) + (
+            [] if attn is not None else list(self.compiled_feature_attn.parameters())
         )
         if owned_params:
             self.optimizer = optim.Adam(owned_params, lr=1e-3)

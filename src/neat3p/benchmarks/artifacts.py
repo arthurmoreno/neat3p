@@ -19,8 +19,9 @@ def _env_tag(env_id: str) -> str:
     return "noscent" if "NoScent" in env_id else "scent"
 
 
-def save_winner(save_dir, kind, result, env_id, seed, config_path,
-                feature_dim=None, encoder=None, attn=None, generation=None) -> str:
+def save_winner(
+    save_dir, kind, result, env_id, seed, config_path, feature_dim=None, encoder=None, attn=None, generation=None
+) -> str:
     """Pickle a self-contained winner package and return its path."""
     assert kind in VALID_KINDS, f"unknown kind {kind}"
     os.makedirs(save_dir, exist_ok=True)
@@ -50,8 +51,11 @@ def save_winner(save_dir, kind, result, env_id, seed, config_path,
 
 def _build_config(config_path):
     return neat3p.Config(
-        neat3p.DefaultGenome, neat3p.DefaultReproduction,
-        neat3p.DefaultSpeciesSet, neat3p.DefaultStagnation, config_path,
+        neat3p.DefaultGenome,
+        neat3p.DefaultReproduction,
+        neat3p.DefaultSpeciesSet,
+        neat3p.DefaultStagnation,
+        config_path,
     )
 
 
@@ -60,19 +64,23 @@ def load_winner(path, device="cuda:0"):
     with open(path, "rb") as f:
         pkg = pickle.load(f)
 
+    kind = pkg["kind"]
+    assert kind in VALID_KINDS, f"unknown kind {kind!r}"
+
     config = _build_config(pkg["config_path"])
-    genome = pkg["winner_genome"]
-    sd, ad, kind = pkg["state_dim"], pkg["action_dim"], pkg["kind"]
+    sd, ad = pkg["state_dim"], pkg["action_dim"]
 
     if kind == "recurrent_net":
         from neat3p.nn.composite import NEATRecurrentNet
-        net = NEATRecurrentNet(genome, sd, ad, config, device_alias=device)
+
+        net = NEATRecurrentNet(pkg["winner_genome"], sd, ad, config, device_alias=device)
         return pkg, net, "module"
 
     if kind == "feature_attention":
         from neat3p.nn.composite import NEATNetWithFeatureAttention
         from neat3p.nn.modules.attention import FeatureAttention
         from neat3p.nn.modules.encoders import SimpleEncoder
+
         fd = pkg["feature_dim"]
         enc = SimpleEncoder(sd, fd, device=device)
         enc.load_state_dict(pkg["encoder_state_dict"])
@@ -80,19 +88,29 @@ def load_winner(path, device="cuda:0"):
         attn = FeatureAttention(input_dim=fd, device=device)
         attn.load_state_dict(pkg["attn_state_dict"])
         attn.eval()
-        net = NEATNetWithFeatureAttention(genome, sd, ad, config, device_alias=device, encoder=enc, attn=attn)
+        net = NEATNetWithFeatureAttention(pkg["winner_genome"], sd, ad, config, device_alias=device, encoder=enc, attn=attn)
         return pkg, net, "module"
 
-    # HyperNEAT / Adaptive — rebuild the voxel substrate from the library
-    from neat3p.benchmarks.substrates import voxel_forage_substrate
-    in_c, hid_c, out_c = voxel_forage_substrate()
     if kind == "hyper_neat":
+        from neat3p.benchmarks.substrates import voxel_forage_substrate
         from neat3p.nn.composite import HyperNEATNet
-        net = HyperNEATNet.create(genome, config, in_c, hid_c, out_c, device=device)
-    else:  # adaptive_hyperneat
+
+        in_c, hid_c, out_c = voxel_forage_substrate()
+        net = HyperNEATNet.create(pkg["winner_genome"], config, in_c, hid_c, out_c, device=device)
+        return pkg, net, "recurrent"
+
+    if kind == "adaptive_hyperneat":
+        from neat3p.benchmarks.substrates import voxel_forage_substrate
         from neat3p.nn.composite import AdaptiveNet
-        net = AdaptiveNet.create(genome, config, input_coords=in_c, hidden_coords=hid_c, output_coords=out_c, device=device)
-    return pkg, net, "recurrent"
+
+        in_c, hid_c, out_c = voxel_forage_substrate()
+        net = AdaptiveNet.create(
+            pkg["winner_genome"], config,
+            input_coords=in_c, hidden_coords=hid_c, output_coords=out_c, device=device,
+        )
+        return pkg, net, "recurrent"
+
+    raise ValueError(f"Unhandled kind {kind!r}")
 
 
 def reset_net(net, style):
