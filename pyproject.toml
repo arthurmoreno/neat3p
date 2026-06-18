@@ -34,7 +34,7 @@ classifiers = [
 
 [project.optional-dependencies]
 nn = ["torch"]
-bench = ["neat3p[nn]", "gymnasium[classic-control,box2d]", "psutil", "plotly", "pandas"]
+bench = ["neat3p[nn]", "gymnasium[classic-control,box2d]", "psutil", "plotly", "pandas", "tqdm"]
 
 [project.urls]
 "Homepage" = "https://github.com/arthurmoreno/neat3p"
@@ -63,6 +63,7 @@ neat3p = ["include/neat3p/neat3p.hpp"]
 markers = [
     "slow: benchmark tests that run a full NEAT training loop (deselect with -m 'not slow')",
 ]
+pythonpath = ["src", "."]
 
 [tool.ruff]
 line-length = 120
