@@ -141,11 +141,34 @@ target_link_libraries(_neat3p PRIVATE
 # Ensure schema generation runs before building the module
 add_dependencies(_neat3p GenerateFlatBuffers)
 
+# ----------------------------------------------------------------------------
+# Automatically generate a stub for the "_neat3p" Python module at build time
+# ----------------------------------------------------------------------------
+
+nanobind_add_stub(
+    _neat3p_stub                 # unique CMake target name
+    INSTALL_TIME
+    MODULE _neat3p               # the Python module name to import
+    OUTPUT _neat3p.pyi           # stub file path (relative to CMAKE_CURRENT_BINARY_DIR)
+    PYTHON_PATH                  # where to find the built extension when importing
+        $<TARGET_FILE_DIR:_neat3p>
+    DEPENDS _neat3p              # ensure the extension is built first
+    MARKER_FILE py.typed         # also emit a py.typed marker
+)
+
 # ------------------------------------------------------------------------------
 # Install directives
 # ------------------------------------------------------------------------------
 # Install the compiled Python extension module into the neat3p package directory
 install(TARGETS _neat3p LIBRARY DESTINATION neat3p)
+
+# Install the generated stub and py.typed marker alongside the extension.
+install(
+    FILES
+        "${CMAKE_INSTALL_PREFIX}/_neat3p.pyi"
+        "${CMAKE_INSTALL_PREFIX}/py.typed"
+    DESTINATION neat3p
+)
 
 # Install the umbrella header for C++ users.
 # Adjust the path to neat3p.hpp if it's located somewhere else.
