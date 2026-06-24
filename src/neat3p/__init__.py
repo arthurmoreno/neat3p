@@ -20,4 +20,22 @@ from .statistics import StatisticsReporter
 from .threaded import ThreadedEvaluator
 from .utils import this_is_neat
 
-__all__ = ["GenomeConfig", "DefaultNodeGene"]
+__all__ = [
+    "GenomeConfig",
+    "DefaultNodeGene",
+    "Checkpointer",
+    "Config",
+    "DistributedEvaluator",
+    "host_is_local",
+    "DefaultGenome",
+    "ParallelEvaluator",
+    "CompleteExtinctionException",
+    "Population",
+    "StdOutReporter",
+    "DefaultReproduction",
+    "DefaultSpeciesSet",
+    "DefaultStagnation",
+    "StatisticsReporter",
+    "ThreadedEvaluator",
+    "this_is_neat",
+]
