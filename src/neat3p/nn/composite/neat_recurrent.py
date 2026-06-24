@@ -41,7 +41,9 @@ class NEATRecurrentNet(nn.Module):
         self.state_dim = state_dim
         self.action_dim = action_dim
         self.explore_rate = 0.125
-        self.net = RecurrentNet.create(genome, config, use_current_activs=use_current_activs)
+        self.net = RecurrentNet.create(
+            genome, config, use_current_activs=use_current_activs, device=str(self.device)
+        )
 
     def forward(self, state: torch.Tensor) -> torch.Tensor:
         state = state.to(self.device)

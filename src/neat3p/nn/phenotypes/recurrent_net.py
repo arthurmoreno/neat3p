@@ -7,13 +7,15 @@ from neat3p.graphs import required_for_output
 from neat3p.nn.modules.activations import sigmoid_activation
 
 
-def dense_from_coo(shape, conns, dtype=torch.float64):
-    mat = torch.zeros(shape, dtype=dtype)
+def dense_from_coo(shape, conns, dtype=torch.float64, device="cpu"):
+    mat = torch.zeros(shape, dtype=dtype, device=device)
     idxs, weights = conns
     if len(idxs) == 0:
         return mat
     rows, cols = np.array(idxs).transpose()
-    mat[torch.tensor(rows), torch.tensor(cols)] = torch.tensor(weights, dtype=dtype)
+    mat[torch.tensor(rows, device=device), torch.tensor(cols, device=device)] = torch.tensor(
+        weights, dtype=dtype, device=device
+    )
     return mat
 
 
@@ -49,26 +51,26 @@ class RecurrentNet:
         self.activation = activation
         self.n_internal_steps = n_internal_steps
         self.dtype = dtype
-        self.device = device
+        self.device = torch.device(device)
 
         self.n_inputs = n_inputs
         self.n_hidden = n_hidden
         self.n_outputs = n_outputs
 
         if n_hidden > 0:
-            self.input_to_hidden = dense_from_coo((n_hidden, n_inputs), input_to_hidden, dtype=dtype)
-            self.hidden_to_hidden = dense_from_coo((n_hidden, n_hidden), hidden_to_hidden, dtype=dtype)
-            self.output_to_hidden = dense_from_coo((n_hidden, n_outputs), output_to_hidden, dtype=dtype)
-            self.hidden_to_output = dense_from_coo((n_outputs, n_hidden), hidden_to_output, dtype=dtype)
-        self.input_to_output = dense_from_coo((n_outputs, n_inputs), input_to_output, dtype=dtype)
-        self.output_to_output = dense_from_coo((n_outputs, n_outputs), output_to_output, dtype=dtype)
+            self.input_to_hidden = dense_from_coo((n_hidden, n_inputs), input_to_hidden, dtype=dtype, device=self.device)
+            self.hidden_to_hidden = dense_from_coo((n_hidden, n_hidden), hidden_to_hidden, dtype=dtype, device=self.device)
+            self.output_to_hidden = dense_from_coo((n_hidden, n_outputs), output_to_hidden, dtype=dtype, device=self.device)
+            self.hidden_to_output = dense_from_coo((n_outputs, n_hidden), hidden_to_output, dtype=dtype, device=self.device)
+        self.input_to_output = dense_from_coo((n_outputs, n_inputs), input_to_output, dtype=dtype, device=self.device)
+        self.output_to_output = dense_from_coo((n_outputs, n_outputs), output_to_output, dtype=dtype, device=self.device)
 
         if n_hidden > 0:
             self.hidden_responses = torch.tensor(hidden_responses, dtype=dtype, device=self.device)
             self.hidden_biases = torch.tensor(hidden_biases, dtype=dtype, device=self.device)
 
-        self.output_responses = torch.tensor(output_responses, dtype=dtype)
-        self.output_biases = torch.tensor(output_biases, dtype=dtype, device=device)
+        self.output_responses = torch.tensor(output_responses, dtype=dtype, device=self.device)
+        self.output_biases = torch.tensor(output_biases, dtype=dtype, device=self.device)
 
         self.reset(batch_size)
 
@@ -77,28 +79,17 @@ class RecurrentNet:
             self.activs = torch.zeros(batch_size, self.n_hidden, dtype=self.dtype, device=self.device)
         else:
             self.activs = None
-        self.outputs = torch.zeros(batch_size, self.n_outputs, dtype=self.dtype)
+        self.outputs = torch.zeros(batch_size, self.n_outputs, dtype=self.dtype, device=self.device)
 
     def activate(self, inputs):
         """
         inputs: (batch_size, n_inputs)
         returns: (batch_size, n_outputs)
         """
-        self.input_to_output = self.input_to_output.cuda()
-        self.output_to_output = self.output_to_output.cuda()
-        self.outputs = self.outputs.cuda()
-        self.output_responses = self.output_responses.cuda()
-        self.output_biases = self.output_biases.cuda()
-
         with torch.no_grad():
-            inputs = torch.tensor(inputs, dtype=self.dtype, device=self.device)
-            activs_for_output = self.activs.cuda() if self.activs is not None else self.activs
+            inputs = inputs.to(device=self.device, dtype=self.dtype)
+            activs_for_output = self.activs
             if self.n_hidden > 0:
-                self.input_to_hidden = self.input_to_hidden.cuda()
-                self.hidden_to_hidden = self.hidden_to_hidden.cuda()
-                self.output_to_hidden = self.output_to_hidden.cuda()
-                self.hidden_to_output = self.hidden_to_output.cuda()
-
                 for _ in range(self.n_internal_steps):
                     self.activs = self.activation(
                         self.hidden_responses
@@ -110,7 +101,7 @@ class RecurrentNet:
                         + self.hidden_biases
                     )
                 if self.use_current_activs:
-                    activs_for_output = self.activs.cuda() if self.activs is not None else self.activs
+                    activs_for_output = self.activs
             output_inputs = self.input_to_output.mm(inputs.t()).t() + self.output_to_output.mm(self.outputs.t()).t()
             if self.n_hidden > 0:
                 output_inputs += self.hidden_to_output.mm(activs_for_output.t()).t()
@@ -126,6 +117,7 @@ class RecurrentNet:
         prune_empty=False,
         use_current_activs=False,
         n_internal_steps=1,
+        device="cuda",
     ):
         genome_config = config.genome_config
         required = required_for_output(genome_config.input_keys, genome_config.output_keys, genome.connections)
@@ -221,6 +213,7 @@ class RecurrentNet:
             activation=activation,
             use_current_activs=use_current_activs,
             n_internal_steps=n_internal_steps,
+            device=device,
         )
 
 
@@ -338,6 +331,7 @@ class OptimizedRecurrentNet:
         prune_empty=False,
         use_current_activs=False,
         n_internal_steps=1,
+        device="cuda",
     ):
         genome_config = config.genome_config
         required = required_for_output(genome_config.input_keys, genome_config.output_keys, genome.connections)
@@ -433,4 +427,5 @@ class OptimizedRecurrentNet:
             activation=activation,
             use_current_activs=use_current_activs,
             n_internal_steps=n_internal_steps,
+            device=device,
         )

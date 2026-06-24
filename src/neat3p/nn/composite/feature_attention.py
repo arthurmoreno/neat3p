@@ -109,7 +109,7 @@ class NEATNetWithFeatureAttention(nn.Module):
                     p.requires_grad_(False)
             self._compile_feature_attn()
 
-        self.net = RecurrentNet.create(genome, config)
+        self.net = RecurrentNet.create(genome, config, device=str(self.device))
 
         owned_params = ([] if encoder is not None else list(self.compiled_encoder.parameters())) + (
             [] if attn is not None else list(self.compiled_feature_attn.parameters())
