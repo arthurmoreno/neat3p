@@ -149,6 +149,6 @@ def run_benchmark(
 def _default_generations(task_name: str, model_name: str) -> int:
     if task_name == "cartpole":
         return 300
-    if model_name == "recurrent_net":
+    if model_name in ("recurrent_net", "recurrent_net_native"):
         return 120
     return 60

@@ -18,7 +18,7 @@ import neat3p
 if TYPE_CHECKING:
     from benchmarks.runners.gym_eval import GymEvalResult
 
-VALID_KINDS = ("recurrent_net", "feature_attention", "hyper_neat", "adaptive_hyperneat")
+VALID_KINDS = ("recurrent_net", "recurrent_net_native", "feature_attention", "hyper_neat", "adaptive_hyperneat")
 
 
 def _env_tag(env_id: str) -> str:
@@ -91,6 +91,12 @@ def load_winner(path: str, device: str = "cuda:0") -> tuple[dict, Any, str]:
         net = NEATRecurrentNet(pkg["winner_genome"], sd, ad, config, device_alias=device)
         return pkg, net, "module"
 
+    if kind == "recurrent_net_native":
+        from neat3p.runtime import NativeRecurrentNet
+
+        net = NativeRecurrentNet(pkg["winner_genome"], sd, ad, config)
+        return pkg, net, "module"
+
     if kind == "feature_attention":
         from neat3p.nn.composite import NEATNetWithFeatureAttention
         from neat3p.nn.modules.attention import FeatureAttention
@@ -144,9 +150,11 @@ def reset_net(net: Any, style: str) -> None:
 def select_action(net: Any, obs: Any, style: str) -> int:
     import torch
 
+    from benchmarks.runners.gym_eval import argmax_action
+
     if style == "module":
         obs_t = torch.tensor(obs, dtype=torch.float32).unsqueeze(0)
-        return int(net(obs_t).argmax(dim=1).item())
+        return argmax_action(net(obs_t))
     out = net.activate([obs.tolist()])
     return int(out[0].argmax().item())
 

@@ -8,6 +8,7 @@ dependencies:
   - boost-cpp=1.74.0=hc6e9bd1_3
   - bzip2=1.0.8=h5eee18b_6
   - ca-certificates=2025.4.26=hbd8a1cb_0
+  - eigen>=3.4
   - expat=2.6.4=h6a678d5_0
   - icu=68.2=h9c3ff4c_0
   - ld_impl_linux-64=2.40=h12ee557_0

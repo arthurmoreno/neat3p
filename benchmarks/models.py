@@ -82,6 +82,39 @@ class _RecurrentNetAdapter(ModelAdapter):
 
 
 # ---------------------------------------------------------------------------
+# RecurrentNet, native (torch-free) evaluator
+# ---------------------------------------------------------------------------
+
+
+class _RecurrentNetNativeAdapter(ModelAdapter):
+    """Same genome, config and rules as ``recurrent_net``; the phenotype runs on neat3p.runtime (Eigen)."""
+
+    kind = "recurrent_net_native"
+    tunables = {}
+
+    def config_path(self, task: TaskSpec) -> str:
+        return RECURRENT_NET.config_path(task)
+
+    def build(self, task: TaskSpec, env_id: str, seed: int, device: str, verbose: bool, **tunables: Any) -> NetBuild:
+        from neat3p.runtime import NativeRecurrentNet
+
+        return NetBuild(NativeRecurrentNet, {}, {})
+
+    def rebuild(self, pkg: dict, device: str) -> tuple[Any, str]:
+        import neat3p
+        from neat3p.runtime import NativeRecurrentNet
+
+        config = neat3p.Config(
+            neat3p.DefaultGenome,
+            neat3p.DefaultReproduction,
+            neat3p.DefaultSpeciesSet,
+            neat3p.DefaultStagnation,
+            pkg["config_path"],
+        )
+        return NativeRecurrentNet(pkg["winner_genome"], pkg["state_dim"], pkg["action_dim"], config), "module"
+
+
+# ---------------------------------------------------------------------------
 # FeatureAttention
 # ---------------------------------------------------------------------------
 
@@ -357,10 +390,11 @@ class _AdaptiveHyperNEATAdapter(ModelAdapter):
 # ---------------------------------------------------------------------------
 
 RECURRENT_NET = _RecurrentNetAdapter()
+RECURRENT_NET_NATIVE = _RecurrentNetNativeAdapter()
 FEATURE_ATTENTION = _FeatureAttentionAdapter()
 HYPER_NEAT = _HyperNEATAdapter()
 ADAPTIVE_HYPERNEAT = _AdaptiveHyperNEATAdapter()
 
 MODELS: dict[str, ModelAdapter] = {
-    m.kind: m for m in (RECURRENT_NET, FEATURE_ATTENTION, HYPER_NEAT, ADAPTIVE_HYPERNEAT)
+    m.kind: m for m in (RECURRENT_NET, RECURRENT_NET_NATIVE, FEATURE_ATTENTION, HYPER_NEAT, ADAPTIVE_HYPERNEAT)
 }
