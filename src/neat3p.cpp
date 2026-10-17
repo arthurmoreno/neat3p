@@ -24,6 +24,8 @@
 // Create a shortcut for nanobind
 namespace nb = nanobind;
 
+void bind_recurrent_runtime(nb::module_ &m);
+
 NB_MODULE(_neat3p, m) {
     nb::class_<ConfigParameter>(m, "ConfigParameter")
         .def(nb::init<const std::string &, const nb::object &, std::optional<ConfigValue> >(),
@@ -47,4 +49,6 @@ NB_MODULE(_neat3p, m) {
         .def_rw("key", &DefaultNodeGene::key)
         .def("copy", &DefaultNodeGene::copy)
         .def("distance", &DefaultNodeGene::distance);
+
+    bind_recurrent_runtime(m);
 }

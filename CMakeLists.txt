@@ -53,6 +53,12 @@ find_package(msgpack REQUIRED)
 find_package(spdlog REQUIRED)
 message(STATUS "→ spdlog version:     ${spdlog_VERSION}")
 
+find_package(Eigen3 REQUIRED NO_MODULE)
+if(Eigen3_VERSION VERSION_LESS 3.4)
+    message(FATAL_ERROR "Eigen >= 3.4 is required (found ${Eigen3_VERSION})")
+endif()
+message(STATUS "→ Eigen version:      ${Eigen3_VERSION}")
+
 # find_package(nanobind CONFIG REQUIRED)
 
 find_package(
@@ -136,6 +142,14 @@ target_link_libraries(_neat3p PRIVATE
     ${Python3_LIBRARIES}
     flatbuffers
     spdlog::spdlog
+    Eigen3::Eigen
+)
+
+# The recurrent runtime must keep IEEE semantics (NaN/inf, summation order) to match torch,
+# so it opts out of the project-wide -ffast-math.
+set_source_files_properties(
+    ${CMAKE_SOURCE_DIR}/src/recurrent_runtime.cpp
+    PROPERTIES COMPILE_OPTIONS "-fno-fast-math;-ffp-contract=off"
 )
 
 # Ensure schema generation runs before building the module

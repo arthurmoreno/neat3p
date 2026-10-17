@@ -21,7 +21,9 @@ train, compare, and replay agents.
 ## Features
 
 - **High-performance core** — genome / population / reproduction in C++20, exposed via nanobind.
-- **Network phenotypes** — recurrent net, feature-attention, HyperNEAT, adaptive HyperNEAT.
+- **Network phenotypes** — recurrent net, feature-attention, HyperNEAT, adaptive HyperNEAT (PyTorch, `[nn]`).
+- **Torch-free runtime** — `neat3p.runtime`: a native (Eigen) evaluator of the recurrent phenotype that ships
+  without PyTorch, checked against torch by committed parity fixtures.
 - **Reusable gym** — `neat3p.gym_envs` registers the `VoxelForage` environments (a small 3D
   voxel-foraging task, with `scent` / `noscent` / `shaped` variants).
 - **Benchmark suite** — `python -m benchmarks` for `train` / `suite` / `replay` / `play`, with
@@ -61,7 +63,7 @@ conda create --name neat3p python=3.12
 conda activate neat3p
 
 # native deps for the C++ build
-conda install --name neat3p -c conda-forge spdlog msgpack-c
+conda install --name neat3p -c conda-forge spdlog msgpack-c "eigen>=3.4"
 # (nanobind is vendored via the build; install it only if building manually)
 # conda install --name neat3p -c conda-forge nanobind
 
@@ -94,6 +96,38 @@ make build install EXTRAS='[bench]'
 
 A bare `pip install .` also works for a plain library install (no extras), but the `make`
 targets are the supported path for a full bench-capable environment.
+
+## Runtime (torch-free)
+
+`neat3p.runtime` runs an evolved recurrent genome without PyTorch or CUDA: the base install
+(`pip install neat3p`) contains it, `neat3p[nn]` adds the torch research phenotypes.
+
+```python
+from neat3p.runtime import NativeRecurrentNet
+
+net = NativeRecurrentNet(genome, state_dim, action_dim, config, seed=0)   # compiles the genome (microseconds)
+net.reset()
+action = net.get_action(state)      # (1, 1) int64, epsilon-greedy like NEATRecurrentNet
+outputs = net.forward(state)        # (1, action_dim) float64
+```
+
+It reproduces `neat3p.nn.composite.NEATRecurrentNet` exactly, quirks included: every node uses
+`sigmoid(5x)` (the evolved activation gene is ignored), the output layer sees the new hidden values,
+float64 math. Layers: `build_recurrent_layout` (genome → six weight blocks, pure Python),
+`ReferenceRecurrentNet` (readable numpy, tests only), `compile_recurrent` (C++/Eigen kernel,
+`dtype="float32"` available). One native net serves one creature (batch size 1) and its `activate`
+releases the GIL.
+
+Parity is enforced by committed fixtures (`tests/runtime/fixtures/`, 58 genomes, 64 ticks each, including
+resets, ±1e3, NaN and inf inputs): layout equal to torch's matrices, numpy and native outputs within 1e-12.
+Regenerate them with torch installed:
+
+```bash
+conda run --no-capture-output -n neat3p python tests/runtime/make_fixtures.py
+```
+
+Benchmarks: `python -m benchmarks.runtime_ab` (CartPole, torch CPU vs native, same seeds) and
+`python -m benchmarks.bench_runtime` (microseconds per call).
 
 ## Testing
 

@@ -87,6 +87,13 @@ class _ValidationReporter(neat3p.reporting.BaseReporter):
         self.history.append({"generation": self._gen, "val_mean": float(np.mean(vals))})
 
 
+def argmax_action(out) -> int:
+    """Greedy action from a (1, n_actions) network output: a torch tensor or a numpy array."""
+    if hasattr(out, "detach"):
+        return int(out.argmax(dim=1).item())
+    return int(np.argmax(out, axis=1)[0])
+
+
 def _seed_all(seed: int) -> None:
     random.seed(seed)
     np.random.seed(seed)
@@ -131,7 +138,7 @@ def _rollout_module(env, net, seed=None) -> float:
     while not (terminated or truncated):
         obs_t = torch.tensor(obs, dtype=torch.float32).unsqueeze(0)
         out = net(obs_t)
-        action = int(out.argmax(dim=1).item())
+        action = argmax_action(out)
         obs, reward, terminated, truncated, _ = env.step(action)
         total += float(reward)
     return total
