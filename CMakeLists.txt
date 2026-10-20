@@ -12,6 +12,10 @@ message(STATUS "CMAKE_SOURCE_DIR: ${CMAKE_SOURCE_DIR}")
 # Python and nanobind Setup
 # ------------------------------------------------------------------------------
 find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+if(WIN32)
+    # nanobind links Python::Module (and Python::SABIModule) on Windows; only FindPython defines them.
+    find_package(Python 3.12 COMPONENTS Interpreter Development.Module ${SKBUILD_SABI_COMPONENT} REQUIRED)
+endif()
 
 set(NANOBIND_DIR "${CMAKE_SOURCE_DIR}/libs/nanobind")
 include_directories(${NANOBIND_DIR}/include)
