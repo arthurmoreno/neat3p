@@ -54,7 +54,6 @@ endif()
 set(nanobind_DIR "${CMAKE_SOURCE_DIR}/libs/nanobind/cmake")
 find_package(nanobind CONFIG REQUIRED)
 
-find_package(msgpack REQUIRED)
 
 find_package(spdlog REQUIRED)
 message(STATUS "→ spdlog version:     ${spdlog_VERSION}")
@@ -89,7 +88,6 @@ include_directories(
     ${Python3_NumPy_INCLUDE_DIRS}
     ${CMAKE_SOURCE_DIR}/src
     ${NANOBIND_DIR}/include
-    ${MSGPACK_INCLUDE_DIRS}
     ${CMAKE_SOURCE_DIR}/libs
 )
 
@@ -144,7 +142,6 @@ nanobind_add_module(
 )
 
 target_link_libraries(_neat3p PRIVATE
-    ${MSGPACK_LIBRARIES}
     ${Python3_LIBRARIES}
     flatbuffers
     spdlog::spdlog
