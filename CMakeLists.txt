@@ -12,6 +12,10 @@ message(STATUS "CMAKE_SOURCE_DIR: ${CMAKE_SOURCE_DIR}")
 # Python and nanobind Setup
 # ------------------------------------------------------------------------------
 find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+if(WIN32)
+    # nanobind links Python::Module (and Python::SABIModule) on Windows; only FindPython defines them.
+    find_package(Python 3.12 COMPONENTS Interpreter Development.Module ${SKBUILD_SABI_COMPONENT} REQUIRED)
+endif()
 
 set(NANOBIND_DIR "${CMAKE_SOURCE_DIR}/libs/nanobind")
 include_directories(${NANOBIND_DIR}/include)
@@ -29,18 +33,24 @@ set(CMAKE_CXX_STANDARD 20)
 # ------------------------------------------------------------------------------
 # Example optimization flags
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Disable shared libraries" FORCE)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -flto -ffast-math")
-
-# Colored diagnostics in GCC/Clang
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    add_compile_options(-fdiagnostics-color=always)
-endif()
-
 # Example definition (remove if not needed)
 add_compile_definitions(ENTT_ENTITY_TYPE=int)
 
-# Hide internal symbols by default
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always -fvisibility=hidden")
+if(MSVC)
+    # Same intent as the GCC line below: optimized, fast-math, no CPU-specific code.
+    add_compile_options(/EHsc /bigobj /permissive- /Zc:__cplusplus /utf-8 /fp:fast "$<$<CONFIG:Release>:/O2>")
+    add_compile_definitions(NOMINMAX _USE_MATH_DEFINES WIN32_LEAN_AND_MEAN)
+else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -flto -ffast-math")
+
+    # Colored diagnostics in GCC/Clang
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        add_compile_options(-fdiagnostics-color=always)
+    endif()
+
+    # Hide internal symbols by default
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always -fvisibility=hidden")
+endif()
 
 # ------------------------------------------------------------------------------
 # Required Packages
@@ -48,7 +58,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always -fvisibility=
 set(nanobind_DIR "${CMAKE_SOURCE_DIR}/libs/nanobind/cmake")
 find_package(nanobind CONFIG REQUIRED)
 
-find_package(msgpack REQUIRED)
 
 find_package(spdlog REQUIRED)
 message(STATUS "→ spdlog version:     ${spdlog_VERSION}")
@@ -83,7 +92,6 @@ include_directories(
     ${Python3_NumPy_INCLUDE_DIRS}
     ${CMAKE_SOURCE_DIR}/src
     ${NANOBIND_DIR}/include
-    ${MSGPACK_INCLUDE_DIRS}
     ${CMAKE_SOURCE_DIR}/libs
 )
 
@@ -138,7 +146,6 @@ nanobind_add_module(
 )
 
 target_link_libraries(_neat3p PRIVATE
-    ${MSGPACK_LIBRARIES}
     ${Python3_LIBRARIES}
     flatbuffers
     spdlog::spdlog
@@ -147,9 +154,14 @@ target_link_libraries(_neat3p PRIVATE
 
 # The recurrent runtime must keep IEEE semantics (NaN/inf, summation order) to match torch,
 # so it opts out of the project-wide -ffast-math.
+if(MSVC)
+    set(_ieee_options "/fp:precise")
+else()
+    set(_ieee_options "-fno-fast-math;-ffp-contract=off")
+endif()
 set_source_files_properties(
     ${CMAKE_SOURCE_DIR}/src/recurrent_runtime.cpp
-    PROPERTIES COMPILE_OPTIONS "-fno-fast-math;-ffp-contract=off"
+    PROPERTIES COMPILE_OPTIONS "${_ieee_options}"
 )
 
 # Ensure schema generation runs before building the module
